@@ -79,6 +79,7 @@
     <div id="panelHero" class="panel-pane">
       <div class="panel-head"><h2>🧔 Chieftain</h2>
         <span id="unspentPts" class="unspent">0 pts</span>
+        <button id="hallBtn" class="icon-btn small" aria-label="Hall of Legends">🏛️</button>
         <button id="achBtn" class="icon-btn small" aria-label="Achievements">🏆</button></div>
       <div id="statList" class="list"></div>
       <div id="presetRow" class="preset-row"></div>
@@ -144,6 +145,21 @@
       <div class="daily-meta">🔥 Streak: <b id="dailyStreak">0</b> &nbsp;·&nbsp; Resets at UTC midnight</div>
       <div id="dailyList"></div>
       <button id="dailyClose" class="btn-primary">Close</button>
+    </div>
+  </div>
+
+  <!-- ===================== HALL OF LEGENDS ===================== -->
+  <div id="modalHall" class="modal">
+    <div class="modal-card">
+      <h2>🏛️ Hall of Legends <span id="hallScore" class="ach-count"></span></h2>
+      <div class="hall-sub">Your saga, carved in stone. Every jarl slain, every treasure claimed.</div>
+      <h3>☠ Jarls Slain <span id="hallJarlCount" class="hall-count"></span></h3>
+      <div id="hallJarls" class="hall-grid"></div>
+      <h3>💎 Rarities Discovered <span id="hallRarityCount" class="hall-count"></span></h3>
+      <div id="hallRarities" class="hall-row"></div>
+      <h3>⚜️ Village Curses Broken <span id="hallModCount" class="hall-count"></span></h3>
+      <div id="hallMods" class="hall-row"></div>
+      <button id="hallClose" class="btn-primary">Close</button>
     </div>
   </div>
 

@@ -364,6 +364,28 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; ba
 .off-row b { color: var(--gold-bright); }
 .modal-card p { font-size: 13px; color: var(--parchment); line-height: 1.5; }
 
+/* ===================== HALL OF LEGENDS ===================== */
+.hall-sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.4; }
+.hall-count { font-size: 11px; color: var(--gold-bright); font-weight: 700; margin-left: 6px; }
+.hall-grid { max-height: 22vh; overflow-y: auto; margin-bottom: 4px; }
+.hall-jarl {
+  display: flex; align-items: center; gap: 10px; padding: 7px 10px; margin-bottom: 6px;
+  background: rgba(224,83,61,0.07); border: 1px solid rgba(224,83,61,0.25); border-radius: 10px;
+}
+.hj-skull { color: var(--blood-bright); font-size: 15px; }
+.hj-name { flex: 1; font-size: 12.5px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hj-kills { font-size: 11px; font-weight: 800; color: var(--gold-bright); }
+.hall-empty { font-size: 12px; color: var(--muted); font-style: italic; padding: 8px 4px; }
+.hall-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.hall-chip {
+  flex: 0 0 auto; padding: 6px 10px; border-radius: 10px; text-align: center;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--chip, var(--gold-soft));
+  display: flex; flex-direction: column; gap: 1px; min-width: 74px;
+}
+.hall-chip b { font-size: 11px; color: var(--chip, var(--text)); }
+.hall-chip span { font-size: 9.5px; color: var(--muted); }
+.hall-chip.locked { opacity: 0.4; filter: grayscale(0.8); }
+
 /* ===================== SAGA CHART (MAP) ===================== */
 .map-card {
   max-width: 420px;

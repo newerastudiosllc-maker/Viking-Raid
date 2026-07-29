@@ -82,6 +82,7 @@
         uid: 1,
       },
       achievements: [], // unlocked achievement ids
+      collection: { jarls: {}, rarity: [0, 0, 0, 0, 0, 0], mods: {} }, // Hall of Legends
       onboarding: { step: 0, dismissed: false },
       dailies: null, // generated lazily by Sys.dailyRollover()
       settings: { sfx: true, haptics: true, reducedFx: false, notifsBoss: true, music: true, autoEquip: false },
@@ -108,6 +109,10 @@
     out.totals = Object.assign({}, d.totals, s.totals || {});
     out.settings = Object.assign({}, d.settings, s.settings || {});
     out.achievements = Array.isArray(s.achievements) ? s.achievements : [];
+    out.collection = Object.assign({ jarls: {}, rarity: [0, 0, 0, 0, 0, 0], mods: {} }, s.collection || {});
+    if (!out.collection.jarls || typeof out.collection.jarls !== "object") out.collection.jarls = {};
+    if (!Array.isArray(out.collection.rarity) || out.collection.rarity.length !== 6) out.collection.rarity = [0, 0, 0, 0, 0, 0];
+    if (!out.collection.mods || typeof out.collection.mods !== "object") out.collection.mods = {};
     out.onboarding = Object.assign({}, d.onboarding, s.onboarding || {});
     // loot
     out.loot = Object.assign({}, d.loot, s.loot || {});

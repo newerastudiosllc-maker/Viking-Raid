@@ -39,6 +39,7 @@
       ltAutoToggle: $("ltAutoToggle"), ltAutoState: $("ltAutoState"),
       presetRow: $("presetRow"),
       achBtn: $("achBtn"), modalAchievements: $("modalAchievements"),
+      hallBtn: $("hallBtn"), modalHall: $("modalHall"), hallClose: $("hallClose"),
       achList: $("achList"), achCount: $("achCount"), achClose: $("achClose"),
       dailyBtn: $("dailyBtn"), modalDaily: $("modalDaily"),
       dailyList: $("dailyList"), dailyStreak: $("dailyStreak"), dailyClose: $("dailyClose"),
@@ -91,6 +92,8 @@
 
     // achievements
     el.achBtn.addEventListener("click", function () { UI.refreshAchievements(); UI.openModal("modalAchievements"); });
+    if (el.hallBtn) el.hallBtn.addEventListener("click", function () { UI.showHall(); });
+    if (el.hallClose) el.hallClose.addEventListener("click", function () { UI.closeModal("modalHall"); });
     el.achClose.addEventListener("click", function () { UI.closeModal("modalAchievements"); });
 
     // loot QoL
@@ -862,6 +865,43 @@
       });
     });
     UI.openModal("modalRoute");
+  };
+
+  // --- Hall of Legends -----------------------------------------------
+  UI.showHall = function () {
+    if (!el.modalHall) return;
+    const c = G.state.collection || { jarls: {}, rarity: [0,0,0,0,0,0], mods: {} };
+    const sum = Sys.collectionSummary();
+    $("hallScore").textContent = "Legend " + sum.score;
+    // jarls
+    const names = Object.keys(c.jarls).sort(function (a, b) { return c.jarls[b] - c.jarls[a]; });
+    $("hallJarlCount").textContent = names.length + " slain · " + sum.jarlKills + " kills";
+    let jh = "";
+    names.slice(0, 40).forEach(function (n) {
+      jh += '<div class="hall-jarl"><span class="hj-skull">☠</span><span class="hj-name">' + n + '</span><span class="hj-kills">×' + c.jarls[n] + '</span></div>';
+    });
+    if (!names.length) jh = '<div class="hall-empty">No jarls have fallen to your axe… yet. Reach the Boss Lair at the end of a region.</div>';
+    $("hallJarls").innerHTML = jh;
+    // rarities
+    $("hallRarityCount").textContent = sum.raritiesFound + "/6";
+    let rh = "";
+    DATA.RARITY.forEach(function (R, i) {
+      const n = c.rarity[i] || 0;
+      rh += '<div class="hall-chip' + (n > 0 ? "" : " locked") + '" style="--chip:' + R.color + '">' +
+        '<b>' + (n > 0 ? R.name : "???") + '</b><span>' + (n > 0 ? "×" + n : "undiscovered") + '</span></div>';
+    });
+    $("hallRarities").innerHTML = rh;
+    // modifiers faced
+    $("hallModCount").textContent = sum.modsFaced + "/" + sum.modsTotal;
+    let mh = "";
+    DATA.MODIFIERS.forEach(function (m) {
+      if (m.id === "none") return;
+      const n = c.mods[m.id] || 0;
+      mh += '<div class="hall-chip' + (n > 0 ? "" : " locked") + '" style="--chip:#caa24a">' +
+        '<b>' + (n > 0 ? m.icon + " " + m.name : "???") + '</b><span>' + (n > 0 ? "×" + n : "unfaced") + '</span></div>';
+    });
+    $("hallMods").innerHTML = mh;
+    UI.openModal("modalHall");
   };
 
   // --- Epic+ drop banner (AAA loot moment) ---------------------------

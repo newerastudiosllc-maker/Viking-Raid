@@ -326,6 +326,14 @@ check("gold counter pops on gain", () => {
   if (!doc.getElementById("gold").classList.contains("pop")) throw new Error("no pop class");
 });
 
+check("hall of legends opens with sections", () => {
+  doc.getElementById("hallBtn").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (!doc.getElementById("modalHall").classList.contains("show")) throw new Error("hall not shown");
+  if (doc.querySelectorAll("#hallRarities .hall-chip").length !== 6) throw new Error("rarity chips missing");
+  if (doc.querySelectorAll("#hallMods .hall-chip").length < 5) throw new Error("mod chips missing");
+  doc.getElementById("hallClose").dispatchEvent(new window.Event("click", { bubbles: true }));
+});
+
 driveFrames(10);
 
 console.log("\n== CHECKS ==");

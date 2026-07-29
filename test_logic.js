@@ -420,6 +420,41 @@ console.log("\n== Plunder Frenzy (clear-speed momentum) ==");
   })());
 })();
 
+console.log("\n== Hall of Legends (collection) ==");
+(function () {
+  const s = State.defaults();
+  s.villageIndex = CONFIG.BOSS_INDEX;
+  Sys.init(s);
+  const bossName = G.village.name;
+  G.village.hp = 0;
+  Sys.clearVillage();
+  ok("jarl recorded on boss kill", s.collection.jarls[bossName] === 1);
+  ok("rarity tally counts drops", s.collection.rarity.reduce(function (a, b) { return a + b; }, 0) >= 1);
+  ok("summary counts jarls", Sys.collectionSummary().jarlNames.length === 1 && Sys.collectionSummary().jarlKills === 1);
+  ok("summary score positive", Sys.collectionSummary().score > 0);
+  ok("modifier faced recorded", (function () {
+    // find any modified village deterministically and clear it
+    for (let r = 0; r < 20; r++) for (let i = 0; i < CONFIG.BOSS_INDEX; i++) {
+      const v = Sys.genVillage(r, i);
+      if (v.mod && v.mod.id !== "none") {
+        G.village = v; v.hp = 0; Sys.clearVillage();
+        return (s.collection.mods[v.mod.id] || 0) >= 1;
+      }
+    }
+    return false;
+  })());
+  ok("collection survives save round-trip", (function () {
+    const code = State.exportCode(s);
+    const imp = State.importCode(code);
+    return imp && imp.collection && imp.collection.jarls[bossName] === 1;
+  })());
+  ok("old saves heal collection", (function () {
+    const old = State.defaults(); delete old.collection;
+    const imp = State.importCode(State.exportCode(old));
+    return imp && imp.collection && imp.collection.rarity.length === 6;
+  })());
+})();
+
 console.log("\n== Save / load ==");
 State.save(st);
 const ld = State.load();

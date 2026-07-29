@@ -131,6 +131,8 @@
     s.loot.inventory.push(item);
     s.loot.totalDrops++;
     if (item.rarity > s.loot.bestRarity) s.loot.bestRarity = item.rarity;
+    // Hall of Legends: rarity tally
+    if (s.collection && s.collection.rarity) s.collection.rarity[item.rarity] = (s.collection.rarity[item.rarity] || 0) + 1;
     // auto-equip if enabled and the new item beats what's equipped
     if (s.settings.autoEquip) {
       const cur = s.loot.equipped[item.slot];
@@ -638,6 +640,12 @@
     const wasBoss = v.isBoss;
     if (wasBoss) s.totals.bosses++;
 
+    // Hall of Legends: record the fallen jarl + faced modifier
+    if (s.collection) {
+      if (wasBoss && s.collection.jarls) s.collection.jarls[v.name] = (s.collection.jarls[v.name] || 0) + 1;
+      if (v.mod && v.mod.id !== "none" && s.collection.mods) s.collection.mods[v.mod.id] = (s.collection.mods[v.mod.id] || 0) + 1;
+    }
+
     // impact feedback
     if (G.runtime) {
       G.runtime.hitstop = Math.max(G.runtime.hitstop, wasBoss ? CONFIG.HITSTOP_BOSS_MS / 1000 : CONFIG.HITSTOP_CLEAR_MS / 1000);
@@ -736,6 +744,26 @@
 
   Sys.currentRoute = function () {
     return DATA.ROUTE_BY_ID[G.state.route || "calm"] || DATA.ROUTES[0];
+  };
+
+  // --- Hall of Legends (collection log) -------------------------------
+  Sys.collectionSummary = function () {
+    const c = G.state.collection || { jarls: {}, rarity: [0,0,0,0,0,0], mods: {} };
+    const jarlNames = Object.keys(c.jarls || {});
+    let jarlKills = 0;
+    jarlNames.forEach(function (n) { jarlKills += c.jarls[n]; });
+    const raritiesFound = (c.rarity || []).filter(function (n) { return n > 0; }).length;
+    const modsFaced = Object.keys(c.mods || {}).length;
+    const modsTotal = DATA.MODIFIERS.filter(function (m) { return m.id !== "none"; }).length;
+    return {
+      jarlNames: jarlNames,
+      jarlKills: jarlKills,
+      raritiesFound: raritiesFound,
+      modsFaced: modsFaced,
+      modsTotal: modsTotal,
+      // completion score: every trophy category weighs in
+      score: jarlNames.length * 3 + raritiesFound * 2 + modsFaced,
+    };
   };
 
   // --- Saga Chart (region map) ---------------------------------------
