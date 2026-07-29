@@ -229,6 +229,15 @@
     ],
     ROUTE_BY_ID: {},
 
+    // --- Rune Storms: weekend events, rotating deterministically by UTC week ---
+    STORMS: [
+      { id: "gold_gale",   name: "Gold Gale",      icon: "🌪️", desc: "The winds carry treasure: +50% gold from every raid.",        gold: 1.5,  xp: 1.0, drop: 0,    runes: 1.0, dmg: 1.0 },
+      { id: "wyrd_tide",   name: "Wyrd Tide",      icon: "🌊", desc: "Fate favors the bold: +15% loot drop chance.",                gold: 1.0,  xp: 1.0, drop: 0.15, runes: 1.0, dmg: 1.0 },
+      { id: "blood_moon",  name: "Blood Moon",     icon: "🌕", desc: "Fury under the red moon: +30% all damage, +25% XP.",          gold: 1.0,  xp: 1.25, drop: 0,   runes: 1.0, dmg: 1.3 },
+      { id: "rune_rain",   name: "Rune Rain",      icon: "🔮", desc: "The sky weeps power: bosses drop double runes.",              gold: 1.0,  xp: 1.0, drop: 0,    runes: 2.0, dmg: 1.0 },
+      { id: "allfathers",  name: "Allfather's Eye",icon: "👁️", desc: "Odin watches: +25% gold, +25% XP, +5% drop chance.",          gold: 1.25, xp: 1.25, drop: 0.05, runes: 1.0, dmg: 1.0 },
+    ],
+
     REGIONS: [
       { name: "The Frozen Shore",   art: "scene_frozen_shore", tint: "#1b2a3a", weather: "snow" },
       { name: "Whispering Fjords",  art: "scene_fjords",       tint: "#243440", weather: "mist" },

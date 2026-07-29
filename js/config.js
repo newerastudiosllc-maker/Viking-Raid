@@ -205,6 +205,9 @@
     FRENZY_DMG_PER_STACK: 0.08,       // +8% tap & crew damage per stack
     FRENZY_GOLD_PER_STACK: 0.10,      // +10% plunder per stack
 
+    // --- Rune Storms (deterministic weekly events, UTC week) -----------
+    STORM_ACTIVE_DAYS: [5, 6, 0],     // Fri / Sat / Sun UTC
+
     // --- Boss fury / stagger -----------------------------------------
     BOSS_FURY_HP_FRAC: 0.35,
     BOSS_STAGGER_S: 4,

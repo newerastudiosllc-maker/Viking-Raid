@@ -326,6 +326,19 @@ check("gold counter pops on gain", () => {
   if (!doc.getElementById("gold").classList.contains("pop")) throw new Error("no pop class");
 });
 
+check("storm banner shows during a rune storm", () => {
+  const orig = window.Sys.activeStorm;
+  window.Sys.activeStorm = function () { return window.DATA.STORMS[0]; };
+  window.UI.update();
+  const bn = doc.getElementById("stormBanner");
+  if (bn.style.display === "none") throw new Error("banner hidden during storm");
+  if (doc.getElementById("stormName").textContent.indexOf("GOLD GALE") < 0) throw new Error("wrong storm name");
+  window.Sys.activeStorm = function () { return null; };
+  window.UI.update();
+  if (bn.style.display !== "none") throw new Error("banner not hidden after storm");
+  window.Sys.activeStorm = orig;
+});
+
 check("hall of legends opens with sections", () => {
   doc.getElementById("hallBtn").dispatchEvent(new window.Event("click", { bubbles: true }));
   if (!doc.getElementById("modalHall").classList.contains("show")) throw new Error("hall not shown");

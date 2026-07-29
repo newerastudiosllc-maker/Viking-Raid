@@ -103,6 +103,8 @@
     chance += s.stats.fot * 0.004; // Fortune = magic find
     const rt = DATA.ROUTE_BY_ID[s.route || "calm"];
     if (rt) chance += rt.dropBonus || 0;
+    const st = Sys.activeStorm();
+    if (st) chance += st.drop || 0;
     if (Math.random() > chance) return null;
     return Sys.genItem(region, { rarityBonus: isBoss ? CONFIG.LOOT_BOSS_RARITY_BONUS : 0 });
   };
@@ -461,6 +463,8 @@
     rt.rage = Math.min(CONFIG.RAGE_CAP, rt.rage + CONFIG.RAGE_PER_TAP);
 
     let dmg = d.tapDmg * comboMult * Sys.frenzyDmgMult();
+    const _storm = Sys.activeStorm();
+    if (_storm && _storm.dmg !== 1) dmg *= _storm.dmg;
     if (s.abilities.berserk.activeLeft > 0) dmg *= CONFIG.ABILITIES.berserk.mult;
     if (rt.ragBuff > 0) dmg *= CONFIG.RAGNAROK_BUFF_MULT;
     if (v.isBoss && v.stagger > 0) dmg *= CONFIG.BOSS_STAGGER_DMG_MULT;
@@ -581,6 +585,8 @@
       interval *= 0.5;
     }
     let crewDmg = crewDps * dt * Sys.frenzyDmgMult();
+    const _storm = Sys.activeStorm();
+    if (_storm && _storm.dmg !== 1) crewDmg *= _storm.dmg;
     if (rt.ragBuff > 0) crewDmg *= CONFIG.RAGNAROK_BUFF_MULT;
     if (v.isBoss && v.stagger > 0) crewDmg *= CONFIG.BOSS_STAGGER_DMG_MULT;
     if (crewDmg > 0) {
@@ -629,8 +635,9 @@
     if (!v || v.hp > 0) return;
     v.hp = 0;
 
-    const goldGain = Math.ceil(v.gold * G.derived.goldMult * (1 + s.hornGoldBuff) * Sys.frenzyGoldMult());
-    const xpGain = Math.ceil(v.xp);
+    const storm = Sys.activeStorm();
+    const goldGain = Math.ceil(v.gold * G.derived.goldMult * (1 + s.hornGoldBuff) * Sys.frenzyGoldMult() * (storm ? storm.gold : 1));
+    const xpGain = Math.ceil(v.xp * (storm ? storm.xp : 1));
     s.gold += goldGain;
     s.xp += xpGain;
     s.totals.goldEarned += goldGain;
@@ -665,7 +672,7 @@
     Sys.daily("gold", goldGain);
     if (wasBoss) {
       Sys.daily("bosses", 1);
-      const runes = CONFIG.RUNES_PER_BOSS_BASE + Math.floor(v.region * CONFIG.RUNES_PER_BOSS_REGION);
+      const runes = Math.ceil((CONFIG.RUNES_PER_BOSS_BASE + Math.floor(v.region * CONFIG.RUNES_PER_BOSS_REGION)) * (storm ? storm.runes : 1));
       s.loot.runes += runes;
       s.loot.totalRunes += runes;
     }
@@ -744,6 +751,25 @@
 
   Sys.currentRoute = function () {
     return DATA.ROUTE_BY_ID[G.state.route || "calm"] || DATA.ROUTES[0];
+  };
+
+  // --- Rune Storms (weekend events; deterministic from UTC clock) -----
+  Sys.activeStorm = function (now) {
+    const t = now != null ? now : Date.now();
+    const d = new Date(t);
+    if (CONFIG.STORM_ACTIVE_DAYS.indexOf(d.getUTCDay()) < 0) return null;
+    // UTC week number rotates the storm; same for every player worldwide
+    const week = Math.floor(t / (7 * 86400000));
+    return DATA.STORMS[week % DATA.STORMS.length];
+  };
+  Sys.stormEndsIn = function (now) {
+    const t = now != null ? now : Date.now();
+    const d = new Date(t);
+    // storm runs Fri 00:00 UTC → Mon 00:00 UTC; find next Monday 00:00 UTC
+    const day = d.getUTCDay();
+    const daysToMon = day === 0 ? 1 : (8 - day) % 7 || 7;
+    const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysToMon);
+    return Math.max(0, end - t);
   };
 
   // --- Hall of Legends (collection log) -------------------------------

@@ -46,6 +46,7 @@
       modalRoute: $("modalRoute"), routeList: $("routeList"),
       mapBtn: $("mapBtn"), modalMap: $("modalMap"), mapTrail: $("mapTrail"),
       mapRegionName: $("mapRegionName"), mapProgress: $("mapProgress"), mapClose: $("mapClose"),
+      stormBanner: $("stormBanner"), stormIcon: $("stormIcon"), stormName: $("stormName"), stormTimer: $("stormTimer"),
       onboarding: $("onboarding"), obIcon: $("obIcon"), obTitle: $("obTitle"),
       obText: $("obText"), obNext: $("obNext"), obSkip: $("obSkip"), obDots: $("obDots"),
       unspent: $("unspentPts"), statList: $("statList"),
@@ -750,6 +751,25 @@
         if (caches[i] >= s.villageIndex && caches[i] <= s.villageIndex + CONFIG.MAP_SCOUT_AHEAD) { near = true; break; }
       }
       el.mapBtn.classList.toggle("gold-badge", near);
+    }
+    // rune storm banner (weekend event)
+    if (el.stormBanner) {
+      const storm = Sys.activeStorm();
+      if (storm) {
+        el.stormBanner.style.display = "flex";
+        el.stormIcon.textContent = storm.icon;
+        el.stormName.textContent = "RUNE STORM: " + storm.name.toUpperCase();
+        const ms = Sys.stormEndsIn();
+        const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
+        el.stormTimer.textContent = h > 0 ? h + "h " + m + "m left" : m + "m left";
+        if (UI._stormSeen !== storm.id) {
+          UI._stormSeen = storm.id;
+          UI.toast(storm.icon + " RUNE STORM — " + storm.name + "! " + storm.desc, 3200);
+        }
+      } else {
+        el.stormBanner.style.display = "none";
+        UI._stormSeen = null;
+      }
     }
     el.tapVal.textContent = "⚔ " + fmt(d.tapDmg);
     el.crewVal.textContent = "🪓 " + fmt(d.crewDps) + "/s";
