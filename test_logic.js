@@ -377,6 +377,49 @@ console.log("\n== Saga Chart (map, caches, region chest) ==");
   })());
 })();
 
+console.log("\n== Plunder Frenzy (clear-speed momentum) ==");
+(function () {
+  const s = State.defaults();
+  Sys.init(s);
+  ok("frenzy starts at 0", G.runtime.frenzy === 0 && Sys.frenzyDmgMult() === 1 && Sys.frenzyGoldMult() === 1);
+  // first clear primes the streak
+  G.village.hp = 0;
+  Sys.clearVillage();
+  ok("first clear primes frenzy x1", G.runtime.frenzy === 1 && G.runtime.frenzyTimer > 0);
+  // chain clears inside the window stack it
+  let fired = 0;
+  G.on("frenzy", function () { fired++; });
+  for (let i = 0; i < 6; i++) { G.village.hp = 0; Sys.clearVillage(); }
+  ok("chained clears stack frenzy", G.runtime.frenzy >= 2);
+  ok("frenzy capped at max", G.runtime.frenzy <= CONFIG.FRENZY_MAX_STACKS);
+  ok("frenzy events fired", fired >= 1);
+  ok("frenzy boosts damage mult", Sys.frenzyDmgMult() > 1);
+  ok("frenzy boosts gold mult", Sys.frenzyGoldMult() > 1);
+  ok("max frenzy tracked in totals", (s.totals.maxFrenzy || 0) >= 2);
+  // gold actually higher under frenzy
+  ok("clear pays more gold under frenzy", (function () {
+    const v = G.village;
+    const base = Math.ceil(v.gold * G.derived.goldMult);
+    const g0 = s.gold;
+    G.village.hp = 0;
+    Sys.clearVillage();
+    return (s.gold - g0) > base; // includes frenzy gold mult (>1)
+  })());
+  // decay: run the window out
+  ok("frenzy decays after window", (function () {
+    G.runtime.hitstop = 0;
+    let end = false;
+    G.on("frenzyEnd", function () { end = true; });
+    for (let i = 0; i < Math.ceil((CONFIG.FRENZY_WINDOW_S + 1) / 0.05); i++) { G.runtime.hitstop = 0; Sys.tick(0.05); }
+    return G.runtime.frenzy === 0 && end;
+  })());
+  ok("frenzy resets to x1 after lapse", (function () {
+    G.village.hp = 0;
+    Sys.clearVillage();
+    return G.runtime.frenzy === 1;
+  })());
+})();
+
 console.log("\n== Save / load ==");
 State.save(st);
 const ld = State.load();

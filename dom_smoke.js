@@ -306,6 +306,26 @@ check("cache clear fires toast reward", () => {
   if ((G().state.totals.caches || 0) < 1) throw new Error("cache not counted");
 });
 
+check("frenzy builds on chained clears", () => {
+  for (let i = 0; i < 3; i++) { G().village.hp = 0; window.Sys.clearVillage(); }
+  if (G().runtime.frenzy < 2) throw new Error("frenzy did not stack: " + G().runtime.frenzy);
+});
+
+check("epic drop banner animates", () => {
+  const it = window.Sys.genItem(3, { rarityBonus: 3 });
+  window.UI.dropBanner(it);
+  const bn = doc.getElementById("dropBanner");
+  if (!bn.classList.contains("show")) throw new Error("banner not shown");
+  if (!doc.getElementById("dbName").textContent) throw new Error("banner name empty");
+});
+
+check("gold counter pops on gain", () => {
+  window.UI.update();
+  G().state.gold += 100000;
+  window.UI.update();
+  if (!doc.getElementById("gold").classList.contains("pop")) throw new Error("no pop class");
+});
+
 driveFrames(10);
 
 console.log("\n== CHECKS ==");

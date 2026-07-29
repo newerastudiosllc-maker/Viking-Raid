@@ -15,6 +15,7 @@
   let time = 0;
   let mist = [];
   let sparks = [];
+  let debris = []; // spinning emblem shards on village clear
   let rings = [];
   let floaters = [];
   let shakeMag = 0;
@@ -105,6 +106,14 @@
       spawnFloater(cx, cy - 50, "COMBO x" + combo + "!", "#ffd54a", true);
       shake(5);
     },
+    frenzyUp: function (stacks) {
+      const cx = W / 2, cy = H * 0.42;
+      const max = stacks >= CONFIG.FRENZY_MAX_STACKS;
+      burst(cx, cy, max ? "#ffd870" : "#ff7a3c", 18 + stacks * 6);
+      ring(cx, cy, max ? "rgba(255,216,112,0.9)" : "rgba(255,122,60,0.8)");
+      spawnFloater(cx, cy - 70, max ? "MAX FRENZY!" : "FRENZY x" + stacks + "!", max ? "#ffd870" : "#ff9a5c", true);
+      shake(3 + stacks);
+    },
     ragnarok: function () {
       const cx = W / 2, cy = H * 0.42;
       shockwaves.push({ x: cx, y: cy, r: 10, life: 1.3, color: "#ffd870" });
@@ -142,6 +151,20 @@
           x: W / 2 + (Math.random() - 0.5) * 60, y: H * 0.42,
           vx: (Math.random() - 0.5) * 0.5, vy: -0.4 - Math.random() * 0.4,
           life: 1.4, color: boss ? "#ffd54a" : "#ffe08a", size: 2.5 + Math.random() * 2, coin: true,
+        });
+      }
+      // emblem shatter: spinning stone shards blasted outward
+      const R = Math.min(W, H) * (boss ? 0.26 : 0.2);
+      const n = boss ? 14 : 9;
+      for (let i = 0; i < n; i++) {
+        const ang = (i / n) * Math.PI * 2 + Math.random() * 0.5;
+        const sp = 2.2 + Math.random() * 3.4;
+        debris.push({
+          x: W / 2 + Math.cos(ang) * R * 0.4, y: H * 0.42 + Math.sin(ang) * R * 0.4,
+          vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 2.6,
+          rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 0.4,
+          size: R * (0.10 + Math.random() * 0.14), life: 1,
+          color: boss ? "#6a4a30" : "#5a5347", edge: boss ? "#ffb060" : "#9a917e",
         });
       }
       shake(boss ? 14 : 6);
@@ -191,6 +214,8 @@
     // particles
     updateSparks(dt);
     drawSparks();
+    updateDebris(dt, reduced);
+    drawDebris();
     updateRings(dt);
     drawRings();
     updateShockwaves(dt);
@@ -358,6 +383,56 @@
     const rt = G.runtime;
     const v = G.village;
     if (!rt) return;
+    // Plunder Frenzy: burning ember vignette that intensifies with stacks
+    if (rt.frenzy > 0) {
+      const f = rt.frenzy / CONFIG.FRENZY_MAX_STACKS;
+      const urgency = Math.max(0, 1 - rt.frenzyTimer / CONFIG.FRENZY_WINDOW_S);
+      const flick = 0.85 + Math.sin(time * 11) * 0.08 + Math.sin(time * 23.7) * 0.07;
+      const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * (0.44 - f * 0.06), W / 2, H / 2, Math.max(W, H) * 0.78);
+      vg.addColorStop(0, "rgba(255,90,40,0)");
+      vg.addColorStop(1, "rgba(255," + Math.floor(120 - f * 60) + ",30," + (0.10 + f * 0.22) * flick + ")");
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, W, H);
+      // rising embers, denser at higher stacks
+      if (!drawOverlays._embers) drawOverlays._embers = [];
+      const em = drawOverlays._embers;
+      const want = Math.floor(6 + f * 26);
+      while (em.length < want) em.push({ x: Math.random(), y: 1 + Math.random() * 0.2, s: 1 + Math.random() * 2, vx: (Math.random() - 0.5) * 0.04, vy: 0.06 + Math.random() * 0.12 });
+      ctx.save();
+      for (let i = em.length - 1; i >= 0; i--) {
+        const p = em[i];
+        p.y -= p.vy * dt; p.x += p.vx * dt + Math.sin(time * 3 + i) * 0.0004;
+        if (p.y < -0.05) { if (em.length > want) { em.splice(i, 1); continue; } p.y = 1.02; p.x = Math.random(); }
+        ctx.globalAlpha = Math.min(0.8, 0.25 + f * 0.5) * Math.min(1, p.y * 3);
+        ctx.fillStyle = i % 3 ? "#ff9a3c" : "#ffd54a";
+        ctx.beginPath(); ctx.arc(p.x * W, p.y * H, p.s * (1 + f * 0.6), 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+      // frenzy banner: stacks + draining window bar
+      const bx = W / 2, by = H * 0.132;
+      const pulse = rt.frenzy >= CONFIG.FRENZY_MAX_STACKS ? 1 + Math.sin(time * 8) * 0.05 : 1;
+      ctx.save();
+      ctx.translate(bx, by); ctx.scale(pulse, pulse);
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const label = "🔥 PLUNDER FRENZY x" + rt.frenzy;
+      ctx.font = "bold " + Math.max(13, Math.floor(W * 0.042)) + "px 'Cinzel', serif";
+      const tw = ctx.measureText(label).width + 34;
+      ctx.fillStyle = "rgba(40,8,0," + (0.55 + urgency * 0.25) + ")";
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(-tw / 2, -19, tw, 38, 19) : ctx.rect(-tw / 2, -19, tw, 38);
+      ctx.fill();
+      ctx.strokeStyle = rt.frenzy >= CONFIG.FRENZY_MAX_STACKS ? "#ffd870" : "#ff7a3c";
+      ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = rt.frenzy >= CONFIG.FRENZY_MAX_STACKS ? "#ffd870" : "#ffb480";
+      ctx.fillText(label, 0, 0);
+      // draining time bar under the banner
+      const bw2 = tw - 20, frac = Math.max(0, rt.frenzyTimer / CONFIG.FRENZY_WINDOW_S);
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      ctx.fillRect(-bw2 / 2, 22, bw2, 4);
+      ctx.fillStyle = frac < 0.3 ? "#ff5a3c" : "#ffd870";
+      ctx.fillRect(-bw2 / 2, 22, bw2 * frac, 4);
+      ctx.restore();
+    }
     if (rt.flash > 0) {
       ctx.fillStyle = "rgba(255,240,200," + Math.min(0.5, rt.flash * 0.6) + ")";
       ctx.fillRect(0, 0, W, H);
@@ -620,6 +695,38 @@
       ctx.globalAlpha = Math.max(0, p.life);
       ctx.fillStyle = p.color;
       ctx.beginPath(); ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  function updateDebris(dt, reduced) {
+    for (let i = debris.length - 1; i >= 0; i--) {
+      const p = debris[i];
+      p.x += p.vx; p.y += p.vy;
+      p.vy += 0.14;          // heavy gravity — chunks feel weighty
+      p.vx *= 0.995;
+      p.rot += p.vr;
+      p.life -= dt * (reduced ? 2.4 : 0.8);
+      if (p.life <= 0 || p.y > H + 60) debris.splice(i, 1);
+    }
+  }
+  function drawDebris() {
+    for (let i = 0; i < debris.length; i++) {
+      const p = debris[i];
+      const a = Math.max(0, Math.min(1, p.life * 1.4));
+      ctx.save();
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.globalAlpha = a;
+      const s = p.size;
+      ctx.fillStyle = p.color;
+      ctx.strokeStyle = p.edge; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.6, -s * 0.4);
+      ctx.lineTo(s * 0.55, -s * 0.55);
+      ctx.lineTo(s * 0.4, s * 0.5);
+      ctx.lineTo(-s * 0.35, s * 0.6);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
     }
     ctx.globalAlpha = 1;
   }

@@ -412,6 +412,7 @@
       combo: 0, comboTimer: 0, lastTap: 0, maxCombo: state.totals.maxCombo || 0,
       hitstop: 0, bossBanner: 0, regionWipe: 0, flash: 0, lastRegion: state.region,
       rage: 0, ragBuff: 0,
+      frenzy: 0, frenzyTimer: 0,
     };
     ensureDerived();
     if (state.shipHp < 0 || state.shipHp > G.derived.shipMaxHp) {
@@ -457,7 +458,7 @@
     const comboMult = Math.min(CONFIG.COMBO_MULT_CAP, 1 + rt.combo * CONFIG.COMBO_MULT_PER_HIT);
     rt.rage = Math.min(CONFIG.RAGE_CAP, rt.rage + CONFIG.RAGE_PER_TAP);
 
-    let dmg = d.tapDmg * comboMult;
+    let dmg = d.tapDmg * comboMult * Sys.frenzyDmgMult();
     if (s.abilities.berserk.activeLeft > 0) dmg *= CONFIG.ABILITIES.berserk.mult;
     if (rt.ragBuff > 0) dmg *= CONFIG.RAGNAROK_BUFF_MULT;
     if (v.isBoss && v.stagger > 0) dmg *= CONFIG.BOSS_STAGGER_DMG_MULT;
@@ -495,6 +496,16 @@
 
   // --- Ragnarök ultimate (Rage meter) -------------------------------
   Sys.rageFrac = function () { const rt = G.runtime; return rt ? Math.min(1, rt.rage / CONFIG.RAGE_CAP) : 0; };
+  Sys.frenzyDmgMult = function () {
+    const rt = G.runtime;
+    if (!rt || rt.frenzy <= 0) return 1;
+    return 1 + rt.frenzy * CONFIG.FRENZY_DMG_PER_STACK;
+  };
+  Sys.frenzyGoldMult = function () {
+    const rt = G.runtime;
+    if (!rt || rt.frenzy <= 0) return 1;
+    return 1 + rt.frenzy * CONFIG.FRENZY_GOLD_PER_STACK;
+  };
   Sys.rageReady = function () { return Sys.rageFrac() >= 1; };
   Sys.ragnarokActive = function () { const rt = G.runtime; return !!(rt && rt.ragBuff > 0); };
   Sys.unleashRagnarok = function () {
@@ -536,6 +547,14 @@
         rt.comboTimer -= dt;
         if (rt.comboTimer <= 0) rt.combo = 0;
       }
+      // plunder frenzy decay — keep clearing fast or lose the streak
+      if (rt.frenzy > 0) {
+        rt.frenzyTimer -= dt;
+        if (rt.frenzyTimer <= 0) {
+          rt.frenzy = 0;
+          G.emit("frenzyEnd");
+        }
+      }
     }
     const d = ensureDerived();
     const s = G.state;
@@ -559,7 +578,7 @@
       crewDps *= 1.6;
       interval *= 0.5;
     }
-    let crewDmg = crewDps * dt;
+    let crewDmg = crewDps * dt * Sys.frenzyDmgMult();
     if (rt.ragBuff > 0) crewDmg *= CONFIG.RAGNAROK_BUFF_MULT;
     if (v.isBoss && v.stagger > 0) crewDmg *= CONFIG.BOSS_STAGGER_DMG_MULT;
     if (crewDmg > 0) {
@@ -608,7 +627,7 @@
     if (!v || v.hp > 0) return;
     v.hp = 0;
 
-    const goldGain = Math.ceil(v.gold * G.derived.goldMult * (1 + s.hornGoldBuff));
+    const goldGain = Math.ceil(v.gold * G.derived.goldMult * (1 + s.hornGoldBuff) * Sys.frenzyGoldMult());
     const xpGain = Math.ceil(v.xp);
     s.gold += goldGain;
     s.xp += xpGain;
@@ -624,6 +643,13 @@
       G.runtime.hitstop = Math.max(G.runtime.hitstop, wasBoss ? CONFIG.HITSTOP_BOSS_MS / 1000 : CONFIG.HITSTOP_CLEAR_MS / 1000);
       G.runtime.flash = wasBoss ? 0.55 : 0.25;
       G.runtime.rage = Math.min(CONFIG.RAGE_CAP, G.runtime.rage + (wasBoss ? CONFIG.RAGE_PER_BOSS : CONFIG.RAGE_PER_CLEAR));
+      // plunder frenzy: chain fast clears to stack the multiplier
+      const rt = G.runtime;
+      const inWindow = rt.frenzyTimer > 0;
+      rt.frenzy = inWindow ? Math.min(CONFIG.FRENZY_MAX_STACKS, rt.frenzy + 1) : 1;
+      rt.frenzyTimer = CONFIG.FRENZY_WINDOW_S;
+      if (rt.frenzy >= 2) G.emit("frenzy", rt.frenzy);
+      if (rt.frenzy > (s.totals.maxFrenzy || 0)) s.totals.maxFrenzy = rt.frenzy;
     }
 
     // daily quest tracking

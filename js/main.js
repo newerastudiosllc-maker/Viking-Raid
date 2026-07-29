@@ -80,6 +80,10 @@
       SFX.boss();
       UI.toast("🗝️ THE JARL'S CHEST! +" + Render.formatNum(d.gold) + " 🪙 + " + d.item.name, 3000);
     });
+    G.on("frenzy", function (stacks) {
+      if (G.fx && G.fx.frenzyUp) G.fx.frenzyUp(stacks);
+      if (SFX.combo) SFX.combo(Math.min(10, stacks * 2));
+    });
     G.on("levelup", function (lvl) {
       if (G.fx) G.fx.levelUp();
       SFX.level();
@@ -98,7 +102,11 @@
     G.on("bossFury", function () { SFX.retreat(); UI.toast("😡 The Boss ENRAGES — raise shields!", 2400); });
     G.on("drop", function (it) {
       const R = DATA.RARITY[it.rarity];
-      if (it.rarity >= 3) { SFX.boss(); UI.toast("✨ " + R.name + " loot — " + it.name + "!", 2600); }
+      if (it.rarity >= 3) {
+        SFX.boss();
+        UI.dropBanner(it);
+        if (G.fx) G.fx.burst(window.innerWidth / 2, window.innerHeight * 0.34, R.color, 30);
+      }
       else UI.toast(R.name + " loot — " + it.name, 1400);
     });
     G.on("newDay", function () {

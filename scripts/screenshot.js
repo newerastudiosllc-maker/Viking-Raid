@@ -376,6 +376,48 @@ async function main() {
     drawChrome(c, st, v);
   });
 
+  await shot("10_frenzy", function (c) {
+    const st = makeState({ region: 2, villageIndex: 7, gold: 18700000, level: 34, rage: 0.9 });
+    Sys.init(st); const v = G.village; v.hp = v.maxHp * 0.35; v.hitFlash = 0.6;
+    G.runtime.combo = 52; G.runtime.comboTimer = 1.5;
+    buildWeather(st.region); drawBackground(c, st.region); drawWeather(c, st.region);
+    // frenzy ember vignette
+    const vg = c.createRadialGradient(W/2, H/2, Math.min(W,H)*0.38, W/2, H/2, Math.max(W,H)*0.78);
+    vg.addColorStop(0, "rgba(255,90,40,0)"); vg.addColorStop(1, "rgba(255,60,30,0.32)");
+    c.fillStyle = vg; c.fillRect(0, 0, W, H);
+    for (let i = 0; i < 40; i++) {
+      c.globalAlpha = 0.3 + Math.random()*0.5;
+      c.fillStyle = i % 3 ? "#ff9a3c" : "#ffd54a";
+      c.beginPath(); c.arc(Math.random()*W, H*0.25 + Math.random()*H*0.7, 2 + Math.random()*4, 0, Math.PI*2); c.fill();
+    }
+    c.globalAlpha = 1;
+    drawTarget(c, v, time); drawCombo(c, G.runtime.combo, G.runtime.comboTimer);
+    // frenzy banner
+    (function () {
+      const bx = W/2, by = H*0.135, label = "PLUNDER FRENZY x5";
+      c.font = "bold 44px serif"; c.textAlign="center"; c.textBaseline="middle";
+      const tw = c.measureText(label).width + 70;
+      c.fillStyle = "rgba(40,8,0,0.78)"; roundRect(c, bx-tw/2, by-40, tw, 80, 40); c.fill();
+      c.strokeStyle = "#ffd870"; c.lineWidth = 4; roundRect(c, bx-tw/2, by-40, tw, 80, 40); c.stroke();
+      c.fillStyle = "#ffd870"; c.fillText(label, bx, by);
+      c.fillStyle = "rgba(255,255,255,0.18)"; c.fillRect(bx-tw/2+40, by+48, tw-80, 8);
+      c.fillStyle = "#ffd870"; c.fillRect(bx-tw/2+40, by+48, (tw-80)*0.72, 8);
+      c.textBaseline="alphabetic";
+    })();
+    // legendary drop banner
+    (function () {
+      const bw = 660, bh = 210, bx = (W-bw)/2, by = H*0.585;
+      c.fillStyle = "rgba(10,12,20,0.96)"; roundRect(c, bx, by, bw, bh, 22); c.fill();
+      c.strokeStyle = "#e8a23a"; c.lineWidth = 4; roundRect(c, bx, by, bw, bh, 22); c.stroke();
+      c.textAlign = "center";
+      c.fillStyle = "#e8a23a"; c.font = "900 34px serif"; c.fillText("L E G E N D A R Y   D R O P", W/2, by+62);
+      c.fillStyle = "#ece7d8"; c.font = "bold 42px serif"; c.fillText("Runebound Axe of the North", W/2, by+120);
+      c.fillStyle = "#9a9484"; c.font = "26px sans-serif"; c.fillText("Weapon · 3 affixes", W/2, by+168);
+    })();
+    drawFloaters(c, [ {x:W*0.45,y:H*0.30,t:"12,840!",c:"#ffd54a",a:1,big:true},{x:W*0.58,y:H*0.35,t:"4,410",c:"#fff",a:0.85} ]);
+    drawChrome(c, st, v);
+  });
+
   console.log("\nWrote screenshots to " + OUT);
 }
 main().catch(function (e) { console.error(e); process.exit(1); });

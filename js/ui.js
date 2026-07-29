@@ -389,7 +389,8 @@
       stat("Gold Bonus", "🍀", "+" + ((d.goldMult - 1) * 100).toFixed(0) + "%") +
       stat("Attack Speed", "🥁", (1 / d.crewInterval).toFixed(2) + "/s") +
       stat("Warband", "⚜️", Sys.totalUnits() + " specialists") +
-      stat("Dmg Reduction", "🧿", "-" + ((d.shipDmgReduce || 0) * 100).toFixed(0) + "%");
+      stat("Dmg Reduction", "🧿", "-" + ((d.shipDmgReduce || 0) * 100).toFixed(0) + "%") +
+      stat("Best Frenzy", "🔥", "x" + (s.totals.maxFrenzy || 0));
     // ability unlock info
     let h = "";
     Object.keys(CONFIG.ABILITIES).forEach(function (id) {
@@ -716,7 +717,14 @@
     const d = G.derived;
     if (!s || !d) return;
     const v = G.village;
+    // gold pop: scale-bump the counter whenever gold jumps meaningfully
     el.gold.textContent = "🪙 " + fmt(s.gold);
+    if (UI._lastGold != null && s.gold > UI._lastGold * 1.001 + 1) {
+      el.gold.classList.remove("pop");
+      void el.gold.offsetWidth; // restart animation
+      el.gold.classList.add("pop");
+    }
+    UI._lastGold = s.gold;
     el.shards.textContent = "💎 " + fmt(s.saga.shards);
     el.levelBadge.textContent = "LVL " + s.level;
     const need = F.xpForLevel(s.level);
@@ -854,6 +862,21 @@
       });
     });
     UI.openModal("modalRoute");
+  };
+
+  // --- Epic+ drop banner (AAA loot moment) ---------------------------
+  UI.dropBanner = function (it) {
+    const bn = $("dropBanner");
+    if (!bn) return;
+    const R = DATA.RARITY[it.rarity];
+    bn.style.setProperty("--db-color", R.color);
+    bn.style.setProperty("--db-glow", R.color + "88");
+    $("dbRarity").textContent = R.name + " DROP";
+    $("dbName").textContent = it.name;
+    $("dbSub").textContent = DATA.SLOT_BY_ID[it.slot].name + " · " + it.affixes.length + " affixes";
+    bn.classList.remove("show");
+    void bn.offsetWidth;
+    bn.classList.add("show");
   };
 
   UI.toast = function (msg, ms) {

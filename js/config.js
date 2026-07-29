@@ -199,6 +199,12 @@
     REGION_CHEST_GOLD_FACTOR: 14,     // region-clear chest ≈ 14 villages of gold
     REGION_CHEST_RARITY_BONUS: 0.10,  // guaranteed item w/ boss-tier rarity boost
 
+    // --- Plunder Frenzy (clear-speed momentum) -------------------------
+    FRENZY_WINDOW_S: 14,              // clear the next village within this window
+    FRENZY_MAX_STACKS: 5,
+    FRENZY_DMG_PER_STACK: 0.08,       // +8% tap & crew damage per stack
+    FRENZY_GOLD_PER_STACK: 0.10,      // +10% plunder per stack
+
     // --- Boss fury / stagger -----------------------------------------
     BOSS_FURY_HP_FRAC: 0.35,
     BOSS_STAGGER_S: 4,

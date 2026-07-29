@@ -53,6 +53,8 @@ Every equipment bonus feeds directly back into the derived-stat formulas, so the
 - **Warband Specialists** — hire elite crew units with gold (Forge tab): **Berserkers** (+2% Crew DPS each, Lv 6), **Archers** (+2% Tap damage & +0.05% Crit each, Lv 10), and **Shieldmaidens** (−0.8% ship damage taken & +0.04% regen each, capped at −60%, Lv 14). Painted portrait cards with x1/x10/MAX hiring; counts reset on prestige for a fresh build each Saga.
 - **Expedition Routes** — entering each new region (from region 2 on), chart your course: **Calm Passage** (safe), **Storm Strait** (+40% enemy attack, but +65% gold / +30% XP / +6% drops), or **Cursed Channel** (+60% village HP & +25% attack, but 2.2× gold / +50% XP / +12% drops). The route shapes every raid in that region, shows in the HUD, resets to Calm on prestige, and feeds two achievements (Storm Chaser, Grave Robber).
 - **Saga Chart (region map)** — a 🗺️ HUD button opens the voyage trail through the current region on an aged Norse sea chart: conquered villages, your position (pulsing), scouting fog (you see 2 villages ahead — bosses always loom visible), **💰 treasure caches** (2 per region, deterministic; bonus plunder ≈ 6 villages of gold + runes), and the boss lair. Clearing the boss opens **the Jarl's Chest** — a huge gold payout plus a guaranteed high-rarity item — and teases the next region. The map button glows gold when a cache is within scouting range, cache villages carry a bobbing 💰 marker on the raid screen, and a "CACHE" tag appears in the HUD.
+- **🔥 Plunder Frenzy** — clear villages back-to-back (within 14s) to stack a momentum multiplier up to **x5**: +8% tap & crew damage and +10% plunder per stack. A burning ember vignette closes in as stacks rise, a banner with a draining timer bar keeps the pressure on, and MAX FRENZY pulses gold. Lapse and it all resets — the "one more village" engine. Two achievements (Blood Rush x3, Unstoppable Tide x5) and a Best Frenzy stat in the Hero panel.
+- **AAA feedback pass** — emblem **shatter debris** (heavy spinning stone shards with gravity) on every clear, a cinematic **rarity-colored drop banner** for Epic+ loot (slide-punch scale animation, glow matched to rarity), and a **gold-counter pop** whenever plunder lands.
 
 ---
 
@@ -98,8 +100,8 @@ python3 -m http.server 8080
 ```bash
 npm install            # pulls jsdom for the DOM test
 npm test               # runs both suites
-#   • test_logic.js  — 112 core-simulation assertions (combat, leveling, upgrades, loot, runes, daily quests, combo, achievements, modifiers, Ragnarök, boss mechanics, warband units, expedition routes, saga chart map, prestige, offline, save)
-#   • dom_smoke.js   — 39 full-runtime checks in a real DOM (jsdom) with mocked canvas/audio
+#   • test_logic.js  — 123 core-simulation assertions (combat, leveling, upgrades, loot, runes, daily quests, combo, achievements, modifiers, Ragnarök, boss mechanics, warband units, expedition routes, saga chart map, plunder frenzy, prestige, offline, save)
+#   • dom_smoke.js   — 42 full-runtime checks in a real DOM (jsdom) with mocked canvas/audio
 ```
 
 ---

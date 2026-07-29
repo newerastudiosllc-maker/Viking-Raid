@@ -69,6 +69,7 @@
         crits: 0,
         maxCombo: 0,
         caches: 0,
+        maxFrenzy: 0,
       },
       loot: {
         inventory: [],

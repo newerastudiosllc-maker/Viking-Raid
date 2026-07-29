@@ -340,6 +340,8 @@
       { id: "cursed_5",   name: "Grave Robber",         icon: "🧭", desc: "Dare the Cursed Channel 5 times.", check: (s) => ((s.routeStats && s.routeStats.cursed) || 0) >= 5, reward: { shards: 4 } },
       { id: "cache_5",    name: "Treasure Hunter",      icon: "💰", desc: "Plunder 5 treasure caches.",      check: (s) => ((s.totals && s.totals.caches) || 0) >= 5, reward: { runes: 10 } },
       { id: "cache_25",   name: "Hoard Whisperer",      icon: "🗝️", desc: "Plunder 25 treasure caches.",     check: (s) => ((s.totals && s.totals.caches) || 0) >= 25, reward: { shards: 4 } },
+      { id: "frenzy_3",   name: "Blood Rush",           icon: "🔥", desc: "Reach Plunder Frenzy x3.",        check: (s) => ((s.totals && s.totals.maxFrenzy) || 0) >= 3, reward: { runes: 8 } },
+      { id: "frenzy_5",   name: "Unstoppable Tide",     icon: "🌋", desc: "Reach MAX Plunder Frenzy (x5).",  check: (s) => ((s.totals && s.totals.maxFrenzy) || 0) >= 5, reward: { shards: 3 } },
     ],
 
     // --- Village modifiers (per-fight affixes; hp/dps/gold/xp are multipliers) ---
