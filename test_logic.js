@@ -525,6 +525,72 @@ console.log("\n== Rune Storms (weekend events) ==");
   })());
 })();
 
+console.log("\n== Valhalla Ascension (meta-prestige) ==");
+(function () {
+  const s = State.defaults();
+  Sys.init(s);
+  ok("no marks at start", Sys.marksAvailable() === 0 && Sys.canAscend() === false);
+  ok("ascend blocked without marks", Sys.ascend() === false);
+  // earn lifetime shards
+  s.saga.totalEarned = CONFIG.ASCEND_SHARDS_PER_MARK * 3 + 5;
+  s.saga.shards = 40;
+  s.saga.upgrades.steel = 4;
+  s.level = 30; s.gold = 999; s.region = 4; s.highestRegion = 4;
+  s.units.berserker = 12;
+  ok("marks accrue from lifetime shards", Sys.marksAvailable() === 3);
+  ok("ascend succeeds", Sys.ascend() === true);
+  ok("marks granted", s.valhalla.marks === 3 && s.valhalla.totalMarks === 3 && s.valhalla.ascensions === 1);
+  ok("saga burned down", s.saga.shards === 0 && (s.saga.upgrades.steel || 0) === 0);
+  ok("run fully reset", s.level === 1 && s.gold === 0 && s.region === 0 && s.units.berserker === 0);
+  ok("no double-dip: marks need fresh shards", Sys.marksAvailable() === 0);
+  // boons
+  const tap0 = (function () { Sys.recompute(); return G.derived.tapDmg; })();
+  const gold0 = (function () { return G.derived.goldMult; })();
+  ok("buy boon spends marks", Sys.buyBoon("wrath") === true && s.valhalla.marks === 2);
+  ok("wrath boosts damage forever", (function () { Sys.recompute(); return G.derived.tapDmg > tap0 * 1.2; })());
+  ok("buy favor boosts gold", (function () {
+    if (!Sys.buyBoon("favor")) return false;
+    Sys.recompute();
+    return G.derived.goldMult > gold0 * 1.25;
+  })());
+  ok("boon blocked when broke", (function () {
+    s.valhalla.marks = 0;
+    return Sys.buyBoon("sight") === false;
+  })());
+  ok("boon respects max rank", (function () {
+    s.valhalla.marks = 100000;
+    const b = DATA.BOON_BY_ID.vigor;
+    for (let i = 0; i < 10; i++) Sys.buyBoon("vigor");
+    return Sys.boonRank("vigor") === b.max && Sys.buyBoon("vigor") === false;
+  })());
+  ok("vigor caps ship damage reduction", (function () {
+    Sys.recompute();
+    return G.derived.shipDmgReduce >= 0.3 && G.derived.shipDmgReduce <= 0.85;
+  })());
+  ok("sight boosts prestige shards", (function () {
+    s.valhalla.marks = 100000;
+    s.highestRegion = 6;
+    const base = F.sagaShardsFor(6);
+    Sys.buyBoon("sight");
+    return Sys.sagaGain() > base;
+  })());
+  ok("boons survive prestige", (function () {
+    const rank = Sys.boonRank("wrath");
+    s.highestRegion = 6;
+    Sys.doPrestige();
+    return Sys.boonRank("wrath") === rank;
+  })());
+  ok("valhalla survives save round-trip", (function () {
+    const imp = State.importCode(State.exportCode(s));
+    return imp && imp.valhalla.ascensions === 1 && imp.valhalla.boons.wrath >= 1;
+  })());
+  ok("old saves heal valhalla", (function () {
+    const old = State.defaults(); delete old.valhalla;
+    const imp = State.importCode(State.exportCode(old));
+    return imp && imp.valhalla && imp.valhalla.marks === 0;
+  })());
+})();
+
 console.log("\n== Save / load ==");
 State.save(st);
 const ld = State.load();

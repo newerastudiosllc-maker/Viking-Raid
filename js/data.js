@@ -229,6 +229,15 @@
     ],
     ROUTE_BY_ID: {},
 
+    // --- Valhalla Boons: permanent godly powers, never reset -------------
+    BOONS: [
+      { id: "wrath",  name: "Odin's Wrath",     icon: "⚡", desc: "+25% ALL damage per rank. Forever.",              cost: 1, growth: 2.0, max: 5, perRank: 0.25, kind: "dmg" },
+      { id: "favor",  name: "Freyja's Favor",   icon: "🌺", desc: "+30% gold plundered per rank. Forever.",          cost: 1, growth: 2.0, max: 5, perRank: 0.30, kind: "gold" },
+      { id: "sight",  name: "Heimdall's Sight", icon: "👁️", desc: "+15% Saga Shards on prestige per rank. Forever.", cost: 2, growth: 1.8, max: 5, perRank: 0.15, kind: "shards" },
+      { id: "vigor",  name: "Thor's Vigor",     icon: "🔨", desc: "-10% ship damage taken per rank. Forever.",       cost: 2, growth: 2.2, max: 3, perRank: 0.10, kind: "guard" },
+    ],
+    BOON_BY_ID: {},
+
     // --- Rune Storms: weekend events, rotating deterministically by UTC week ---
     STORMS: [
       { id: "gold_gale",   name: "Gold Gale",      icon: "🌪️", desc: "The winds carry treasure: +50% gold from every raid.",        gold: 1.5,  xp: 1.0, drop: 0,    runes: 1.0, dmg: 1.0 },
@@ -459,6 +468,7 @@
   DATA.MODIFIERS.forEach((m) => (DATA.MODIFIER_BY_ID[m.id] = m));
   DATA.UNITS.forEach((u) => (DATA.UNIT_BY_ID[u.id] = u));
   DATA.ROUTES.forEach((r) => (DATA.ROUTE_BY_ID[r.id] = r));
+  DATA.BOONS.forEach((b) => (DATA.BOON_BY_ID[b.id] = b));
 
   global.DATA = DATA;
 })(typeof window !== "undefined" ? window : this);

@@ -84,6 +84,16 @@
       if (G.fx && G.fx.frenzyUp) G.fx.frenzyUp(stacks);
       if (SFX.combo) SFX.combo(Math.min(10, stacks * 2));
     });
+    G.on("ascend", function (marks) {
+      if (G.fx) { G.fx.levelUp(); G.fx.ragnarok && G.fx.ragnarok(); }
+      SFX.prestige();
+      UI.toast("⚡ ASCENDED TO VALHALLA! +" + marks + " Marks — spend them on godly boons.", 3600);
+      UI.refreshAll && UI.refreshAll();
+    });
+    G.on("boon", function (d) {
+      const def = DATA.BOON_BY_ID[d.id];
+      UI.toast(def.icon + " " + def.name + " — Rank " + d.rank + "! This power is forever.", 2600);
+    });
     G.on("levelup", function (lvl) {
       if (G.fx) G.fx.levelUp();
       SFX.level();

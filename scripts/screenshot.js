@@ -418,6 +418,42 @@ async function main() {
     drawChrome(c, st, v);
   });
 
+  await shot("11_valhalla", function (c) {
+    const st = makeState({ region: 5, villageIndex: 3, gold: 240000000, level: 52, rage: 0.7 });
+    Sys.init(st); const v = G.village;
+    buildWeather(st.region); drawBackground(c, st.region); drawWeather(c, st.region);
+    c.fillStyle = "rgba(3,5,9,0.7)"; c.fillRect(0, 0, W, H);
+    const px = 60, py = H*0.14, pw = W-120, ph = H*0.66;
+    c.fillStyle = "rgba(14,10,26,0.97)"; roundRect(c, px, py, pw, ph, 36); c.fill();
+    const vgrad = c.createLinearGradient(0, py, 0, py+ph); vgrad.addColorStop(0, "#a88cf0"); vgrad.addColorStop(1, "#5a3fa0");
+    c.strokeStyle = vgrad; c.lineWidth = 4; roundRect(c, px, py, pw, ph, 36); c.stroke();
+    c.textAlign="center"; c.fillStyle="#d8c8ff"; c.font="bold 58px serif"; c.fillText("⚡ VALHALLA", W/2, py+95);
+    c.fillStyle="#9a8cc8"; c.font="30px sans-serif";
+    c.fillText("Sacrifice your Saga. Gain powers", W/2, py+150);
+    c.fillText("that never reset.", W/2, py+192);
+    // marks banner
+    c.fillStyle="rgba(138,108,224,0.15)"; roundRect(c, px+60, py+230, pw-120, 100, 20); c.fill();
+    c.strokeStyle="#8a6ce0"; c.lineWidth=2; roundRect(c, px+60, py+230, pw-120, 100, 20); c.stroke();
+    c.fillStyle="#f0eaff"; c.font="bold 40px serif"; c.fillText("⚡ 7 Marks of Valhalla · Ascension III", W/2, py+292);
+    const boons = [
+      ["⚡","Odin's Wrath","Rank 3/5","+25% ALL damage per rank. Forever."],
+      ["❁","Freyja's Favor","Rank 2/5","+30% gold plundered per rank. Forever."],
+      ["◉","Heimdall's Sight","Rank 1/5","+15% Saga Shards on prestige. Forever."],
+      ["⚒","Thor's Vigor","Rank 1/3","-10% ship damage taken per rank. Forever."],
+    ];
+    let by = py + 380;
+    boons.forEach((b)=>{
+      c.fillStyle="rgba(255,255,255,0.05)"; roundRect(c, px+50, by, pw-100, 170, 22); c.fill();
+      c.strokeStyle="#6a4fc0"; c.lineWidth=2; roundRect(c, px+50, by, pw-100, 170, 22); c.stroke();
+      c.textAlign="center"; c.font="56px serif"; c.fillStyle="#d8c8ff"; c.fillText(b[0], px+125, by+100);
+      c.textAlign="left"; c.fillStyle="#ece7d8"; c.font="bold 38px serif"; c.fillText(b[1], px+200, by+68);
+      c.fillStyle="#a88cf0"; c.font="bold 27px sans-serif"; c.fillText(b[2], px+200 + c.measureText(b[1]).width + 340, by+66);
+      c.fillStyle="#9a8cc8"; c.font="26px sans-serif"; c.fillText(b[3], px+200, by+120);
+      by += 195;
+    });
+    drawChrome(c, st, v);
+  });
+
   console.log("\nWrote screenshots to " + OUT);
 }
 main().catch(function (e) { console.error(e); process.exit(1); });

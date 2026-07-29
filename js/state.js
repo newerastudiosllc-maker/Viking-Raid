@@ -55,6 +55,13 @@
         totalEarned: 0,
         upgrades: freshSagaUpgrades(),
       },
+      valhalla: {
+        marks: 0,            // ⚡ unspent Marks of Valhalla
+        totalMarks: 0,       // lifetime marks earned
+        ascensions: 0,       // times ascended
+        shardsAtAscend: 0,   // saga.totalEarned snapshot at last ascension
+        boons: {},           // boonId -> rank
+      },
       region: 0,
       villageIndex: 0,
       highestRegion: 0,
@@ -102,6 +109,8 @@
     out.routeStats = Object.assign({ storm: 0, cursed: 0 }, s.routeStats || {});
     out.saga = Object.assign({}, d.saga, s.saga || {});
     out.saga.upgrades = Object.assign(freshSagaUpgrades(), (s.saga && s.saga.upgrades) || {});
+    out.valhalla = Object.assign({ marks: 0, totalMarks: 0, ascensions: 0, shardsAtAscend: 0, boons: {} }, s.valhalla || {});
+    if (!out.valhalla.boons || typeof out.valhalla.boons !== "object") out.valhalla.boons = {};
     out.abilities = Object.assign(freshAbilities(), s.abilities || {});
     Object.keys(d.abilities).forEach((id) => {
       out.abilities[id] = Object.assign({ cdLeft: 0, activeLeft: 0 }, out.abilities[id] || {});
@@ -188,5 +197,5 @@
     }
   }
 
-  global.State = { defaults, heal, save, load, wipe, exportCode, importCode, freshAbilities };
+  global.State = { defaults, heal, save, load, wipe, exportCode, importCode, freshAbilities, freshSagaUpgrades };
 })(typeof window !== "undefined" ? window : this);

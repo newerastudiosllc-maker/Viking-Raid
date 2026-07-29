@@ -208,6 +208,9 @@
     // --- Rune Storms (deterministic weekly events, UTC week) -----------
     STORM_ACTIVE_DAYS: [5, 6, 0],     // Fri / Sat / Sun UTC
 
+    // --- Valhalla Ascension (meta-prestige above Saga) ------------------
+    ASCEND_SHARDS_PER_MARK: 25,       // 1 ⚡ Mark per 25 lifetime shards earned since last ascension
+
     // --- Boss fury / stagger -----------------------------------------
     BOSS_FURY_HP_FRAC: 0.35,
     BOSS_STAGGER_S: 4,

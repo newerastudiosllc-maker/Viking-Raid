@@ -253,6 +253,38 @@
         UI.refreshSaga();
       });
     });
+    buildBoons();
+  }
+
+  function buildBoons() {
+    const list = $("boonList");
+    if (!list) return;
+    let html = "";
+    DATA.BOONS.forEach(function (b) {
+      html +=
+        '<div class="saga-upg boon" data-id="' + b.id + '">' +
+          '<div class="upg-icon">' + b.icon + '</div>' +
+          '<div class="upg-body">' +
+            '<div class="upg-name">' + b.name + ' <span data-lv></span></div>' +
+            '<div class="upg-desc">' + b.desc + '</div>' +
+          '</div>' +
+          '<button class="upg-buy mark" data-buy><span class="bc"></span></button>' +
+        '</div>';
+    });
+    list.innerHTML = html;
+    list.querySelectorAll(".boon").forEach(function (card) {
+      card.querySelector("[data-buy]").addEventListener("click", function () {
+        if (Sys.buyBoon(card.dataset.id)) { SFX.prestige(); UI.refreshSaga(); }
+        else { SFX.error(); }
+      });
+    });
+    const ascBtn = $("valAscend");
+    if (ascBtn) ascBtn.addEventListener("click", function () {
+      if (!Sys.canAscend()) { SFX.error(); return; }
+      const gain = Sys.marksAvailable();
+      if (window.confirm && !window.confirm("Ascend to Valhalla?\n\nYou will gain ⚡" + gain + " Marks but LOSE your entire Saga: all " + G.state.saga.shards + " shards, all Saga boon levels, and your current run.\n\nValhalla powers are forever.")) return;
+      if (Sys.ascend()) { SFX.prestige(); }
+    });
   }
 
   const AB_ART = {
@@ -427,6 +459,30 @@
       b.querySelector(".bc").textContent = "💎 " + cost;
       b.classList.toggle("disabled", s.saga.shards < cost);
     });
+    // Valhalla
+    const vm = $("valMarks"), va = $("valAsc"), vg = $("valGain"), vb = $("valAscend");
+    if (vm) {
+      vm.textContent = fmt(s.valhalla.marks);
+      va.textContent = s.valhalla.ascensions;
+      const gain = Sys.marksAvailable();
+      vg.textContent = "+" + gain;
+      vb.classList.toggle("disabled", gain < 1);
+      vb.textContent = gain >= 1 ? "ASCEND TO VALHALLA  (+⚡" + gain + ")" : "Earn " + CONFIG.ASCEND_SHARDS_PER_MARK + " lifetime 💎 per ⚡ Mark";
+      const list = $("boonList");
+      if (list) list.querySelectorAll(".boon").forEach(function (card) {
+        const id = card.dataset.id;
+        const def = DATA.BOON_BY_ID[id];
+        const rank = Sys.boonRank(id);
+        card.querySelector("[data-lv]").textContent = rank >= def.max ? "MAX" : "Rank " + rank + "/" + def.max;
+        const b2 = card.querySelector("[data-buy]");
+        if (rank >= def.max) { b2.querySelector(".bc").textContent = "MAX"; b2.classList.add("disabled"); }
+        else {
+          const cost = Sys.boonCost(id);
+          b2.querySelector(".bc").textContent = "⚡ " + cost;
+          b2.classList.toggle("disabled", s.valhalla.marks < cost);
+        }
+      });
+    }
   };
 
   function stat(name, icon, val) {

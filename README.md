@@ -55,6 +55,9 @@ Every equipment bonus feeds directly back into the derived-stat formulas, so the
 - **Saga Chart (region map)** — a 🗺️ HUD button opens the voyage trail through the current region on an aged Norse sea chart: conquered villages, your position (pulsing), scouting fog (you see 2 villages ahead — bosses always loom visible), **💰 treasure caches** (2 per region, deterministic; bonus plunder ≈ 6 villages of gold + runes), and the boss lair. Clearing the boss opens **the Jarl's Chest** — a huge gold payout plus a guaranteed high-rarity item — and teases the next region. The map button glows gold when a cache is within scouting range, cache villages carry a bobbing 💰 marker on the raid screen, and a "CACHE" tag appears in the HUD.
 - **🔥 Plunder Frenzy** — clear villages back-to-back (within 14s) to stack a momentum multiplier up to **x5**: +8% tap & crew damage and +10% plunder per stack. A burning ember vignette closes in as stacks rise, a banner with a draining timer bar keeps the pressure on, and MAX FRENZY pulses gold. Lapse and it all resets — the "one more village" engine. Two achievements (Blood Rush x3, Unstoppable Tide x5) and a Best Frenzy stat in the Hero panel.
 - **AAA feedback pass** — emblem **shatter debris** (heavy spinning stone shards with gravity) on every clear, a cinematic **rarity-colored drop banner** for Epic+ loot (slide-punch scale animation, glow matched to rarity), and a **gold-counter pop** whenever plunder lands.
+- **🏛️ Hall of Legends** — a collection log carved in stone: every jarl slain (name + kill count), every rarity tier discovered, every village curse faced, rolled into a Legend score. Undiscovered entries show as ??? to tease completionists.
+- **🌩 Rune Storms** — weekend events (Fri–Sun UTC) with zero backend: 5 storms rotate deterministically by UTC week, identical for every player worldwide. Gold Gale (+50% gold), Wyrd Tide (+15% drops), Blood Moon (+30% damage/+25% XP), Rune Rain (double boss runes), Allfather's Eye (a bit of everything). Glowing violet HUD banner with live countdown.
+- **⚡ Valhalla Ascension** — the layer above Saga: every 25 lifetime Saga Shards earn a **Mark of Valhalla**. Ascending sacrifices your *entire* Saga (shards, boon levels, current run) for Marks to spend on godly powers that never reset: Odin's Wrath (+25% all damage/rank), Freyja's Favor (+30% gold/rank), Heimdall's Sight (+15% prestige shards/rank), Thor's Vigor (−10% ship damage/rank). The three-layer loop: run → Saga → Valhalla.
 
 ---
 
@@ -100,8 +103,8 @@ python3 -m http.server 8080
 ```bash
 npm install            # pulls jsdom for the DOM test
 npm test               # runs both suites
-#   • test_logic.js  — 123 core-simulation assertions (combat, leveling, upgrades, loot, runes, daily quests, combo, achievements, modifiers, Ragnarök, boss mechanics, warband units, expedition routes, saga chart map, plunder frenzy, prestige, offline, save)
-#   • dom_smoke.js   — 42 full-runtime checks in a real DOM (jsdom) with mocked canvas/audio
+#   • test_logic.js  — 159 core-simulation assertions (combat, leveling, upgrades, loot, runes, daily quests, combo, achievements, modifiers, Ragnarök, boss mechanics, warband units, expedition routes, saga chart map, plunder frenzy, hall of legends, rune storms, valhalla ascension, prestige, offline, save)
+#   • dom_smoke.js   — 47 full-runtime checks in a real DOM (jsdom) with mocked canvas/audio
 ```
 
 ---

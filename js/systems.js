@@ -38,6 +38,17 @@
     return total;
   }
 
+  function boonBonus(kind) {
+    const v = G.state.valhalla;
+    if (!v || !v.boons) return 0;
+    let total = 0;
+    DATA.BOONS.forEach(function (b) {
+      if (b.kind === kind) total += (v.boons[b.id] || 0) * b.perRank;
+    });
+    return total;
+  }
+  Sys.boonBonus = boonBonus;
+
   // ===========================================================
   //  LOOT & EQUIPMENT
   // ===========================================================
@@ -345,15 +356,15 @@
 
     const d = {
       statMul: statMul,
-      tapDmg: tapDmg * (1 + eq.tapPct + unitTapPct) + eq.tapFlat,
-      crewDps: crewDmg * (1 + eq.crewPct + unitCrewPct),
+      tapDmg: (tapDmg * (1 + eq.tapPct + unitTapPct) + eq.tapFlat) * (1 + boonBonus("dmg")),
+      crewDps: crewDmg * (1 + eq.crewPct + unitCrewPct) * (1 + boonBonus("dmg")),
       shipMaxHp: Math.max(1, shipMaxHp * (1 + eq.hpPct)),
-      shipDmgReduce: shipDmgReduce,
+      shipDmgReduce: Math.min(0.85, shipDmgReduce + boonBonus("guard")),
       regenFrac:
         C.REGEN_BASE_FRAC + (s.upgrades.rations || 0) * C.RATIONS_REGEN_PER_LEVEL + eq.regen + unitRegen,
       critChance: Math.min(C.CRIT_CAP, C.CRIT_BASE_CHANCE + fotEff * C.FOT_CRIT_CHANCE + eq.crit + unitCrit),
       critMult: C.CRIT_BASE_MULT + (s.upgrades.mead || 0) * C.MEAD_CRIT_MULT_PER_LEVEL + eq.critDmg,
-      goldMult: (1 + fotEff * C.FOT_GOLD_PER_LEVEL) * (1 + sagaBonus("gold")) * (1 + eq.gold),
+      goldMult: (1 + fotEff * C.FOT_GOLD_PER_LEVEL) * (1 + sagaBonus("gold")) * (1 + eq.gold) * (1 + boonBonus("gold")),
       crewInterval:
         C.CREW_BASE_INTERVAL_S * (1 - Math.min(0.6, (s.upgrades.drum || 0) * C.DRUM_SPEED_PER_LEVEL)),
       bannerMult: bannerMult,
@@ -772,6 +783,66 @@
     return Math.max(0, end - t);
   };
 
+  // --- Valhalla Ascension (meta-prestige above Saga) -------------------
+  // Marks accrue from lifetime shards earned since the last ascension.
+  Sys.marksAvailable = function () {
+    const s = G.state;
+    const earnedSince = Math.max(0, s.saga.totalEarned - (s.valhalla.shardsAtAscend || 0));
+    return Math.floor(earnedSince / CONFIG.ASCEND_SHARDS_PER_MARK);
+  };
+  Sys.canAscend = function () {
+    return Sys.marksAvailable() >= 1;
+  };
+  // Ascension: sacrifice the ENTIRE saga (shards + boons tracks) for Marks.
+  Sys.ascend = function () {
+    if (!Sys.canAscend()) return false;
+    const s = G.state;
+    const gained = Sys.marksAvailable();
+    s.valhalla.marks += gained;
+    s.valhalla.totalMarks += gained;
+    s.valhalla.ascensions += 1;
+    s.valhalla.shardsAtAscend = s.saga.totalEarned;
+    // burn the saga layer down with the run
+    s.saga.shards = 0;
+    s.saga.upgrades = State.freshSagaUpgrades ? State.freshSagaUpgrades() : {};
+    DATA.SAGA.forEach(function (u) { s.saga.upgrades[u.id] = 0; });
+    // full run reset (same scope as prestige)
+    s.gold = 0; s.xp = 0; s.level = 1; s.unspentStatPoints = 0;
+    s.stats = { str: 0, led: 0, vit: 0, fot: 0 };
+    s.upgrades = {};
+    DATA.UPGRADES.forEach(function (u) { s.upgrades[u.id] = 0; });
+    s.units = { berserker: 0, archer: 0, shieldmaiden: 0 };
+    s.route = "calm";
+    s.region = 0; s.villageIndex = 0; s.highestRegion = 0;
+    s.shipHp = -1; s.hornGoldBuff = 0;
+    s.abilities = State.freshAbilities();
+    G.dirty = true;
+    Sys.init(s);
+    G.emit("ascend", gained);
+    return true;
+  };
+  Sys.boonRank = function (id) {
+    return (G.state.valhalla && G.state.valhalla.boons[id]) || 0;
+  };
+  Sys.boonCost = function (id) {
+    const b = DATA.BOON_BY_ID[id];
+    return Math.ceil(b.cost * Math.pow(b.growth, Sys.boonRank(id)));
+  };
+  Sys.buyBoon = function (id) {
+    const b = DATA.BOON_BY_ID[id];
+    if (!b) return false;
+    const s = G.state;
+    const rank = Sys.boonRank(id);
+    if (rank >= b.max) return false;
+    const cost = Sys.boonCost(id);
+    if (s.valhalla.marks < cost) return false;
+    s.valhalla.marks -= cost;
+    s.valhalla.boons[id] = rank + 1;
+    G.dirty = true;
+    G.emit("boon", { id: id, rank: rank + 1 });
+    return true;
+  };
+
   // --- Hall of Legends (collection log) -------------------------------
   Sys.collectionSummary = function () {
     const c = G.state.collection || { jarls: {}, rarity: [0,0,0,0,0,0], mods: {} };
@@ -1011,7 +1082,7 @@
     return G.state.highestRegion >= CONFIG.SAGA_MIN_REGION;
   };
   Sys.sagaGain = function () {
-    return F.sagaShardsFor(G.state.highestRegion);
+    return Math.ceil(F.sagaShardsFor(G.state.highestRegion) * (1 + boonBonus("shards")));
   };
 
   Sys.doPrestige = function () {

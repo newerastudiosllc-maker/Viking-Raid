@@ -347,6 +347,29 @@ check("hall of legends opens with sections", () => {
   doc.getElementById("hallClose").dispatchEvent(new window.Event("click", { bubbles: true }));
 });
 
+check("valhalla section renders 4 boons", () => {
+  click('#tabs .tab[data-tab="saga"]');
+  const boons = doc.querySelectorAll("#boonList .boon");
+  if (boons.length !== 4) throw new Error("expected 4 boons, got " + boons.length);
+});
+
+check("boon purchase flows through UI", () => {
+  G().state.valhalla.marks = 10;
+  window.UI.refreshSaga();
+  const btn = doc.querySelector('#boonList .boon[data-id="wrath"] [data-buy]');
+  btn.dispatchEvent(new window.Event("click", { bubbles: true }));
+  if ((G().state.valhalla.boons.wrath || 0) < 1) throw new Error("boon not bought");
+});
+
+check("ascend button reflects availability", () => {
+  G().state.saga.totalEarned = 60;
+  G().state.valhalla.shardsAtAscend = 0;
+  window.UI.refreshSaga();
+  const btn = doc.getElementById("valAscend");
+  if (btn.classList.contains("disabled")) throw new Error("ascend should be enabled with 60 lifetime shards");
+  if (btn.textContent.indexOf("+⚡2") < 0) throw new Error("gain not shown: " + btn.textContent);
+});
+
 driveFrames(10);
 
 console.log("\n== CHECKS ==");
