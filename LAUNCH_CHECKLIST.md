@@ -17,6 +17,10 @@ Legend: ✅ already done in this repo · 🔲 your action · 💰 may cost money
 | `capacitor.config.json` (appId `com.newerastudios.vikingraid`) | ✅ |
 | `scripts/build-web.js` (builds `./www` for Capacitor) | ✅ |
 | App icon source `assets/icon-1024.png` (1024×1024 square) | ✅ |
+| Adaptive icon layers `assets/icon-foreground.png` / `icon-background.png` (1024², safe-zone checked) | ✅ |
+| Splash sources `assets/splash.png` / `splash-dark.png` (2732×2732) | ✅ |
+| Feature graphic `screenshots/feature_graphic.png` (exact 1024×500 key art) | ✅ |
+| Unique scene art for all 6 regions + boss lair backdrop | ✅ |
 | Tests (`npm test` → 73 checks, 0 errors) | ✅ |
 
 ---
@@ -50,7 +54,7 @@ Run these in the project root:
 ```bash
 npm install                      # Capacitor + tooling
 npm run build:web                # copies the game into ./www
-npx capacitor-assets generate    # makes Android icons + splash from assets/icon-1024.png (run: npm i -D @capacitor/assets first)
+npx capacitor-assets generate --android   # icons + splash — sources already in assets/: icon-only, icon-foreground, icon-background, splash, splash-dark (run: npm i -D @capacitor/assets first)
 npx cap add android              # creates ./android  (first time only)
 npx cap sync android             # copies ./www + plugins into the native project
 npx cap open android             # opens the project in Android Studio
@@ -68,9 +72,9 @@ npx cap open android             # opens the project in Android Studio
 
 | # | Asset | Spec | Where to put it | How to make it |
 |---|---|---|---|---|
-| 4.1 | 🔲 App icon | 512×512 PNG, 32-bit, no alpha | Play Console → app → Main store listing | Use `assets/icon-1024.png` resized, or regenerate. |
-| 4.2 | 🔲 **Screenshots** (min 2, rec 3–8) | Phone: 16:9 or 9:16, min 320px, max 3840px JPEG/PNG | Play Console → Main store listing | **Starter set included:** `screenshots/01_splash.png … 05_fortress.png` (true 1080×2340 renders) + `screenshots/feature_graphic.png` (1024×500). Regenerate any time with `npm i @napi-rs/canvas && node scripts/screenshot.js`. For live captures, run on a real device and use `adb exec-out screencap -p > shot.png`. |
-| 4.3 | 🔲 Feature graphic (optional but recommended) | 1024×500 PNG/JPEG | Play Console → Main store listing | A wide banner (longship + "Viking Raid" + "New Era Studios"). |
+| 4.1 | 🔲 App icon | 512×512 PNG, 32-bit, no alpha | Play Console → app → Main store listing | **Ready:** upload `assets/icon-512.png` (flatten alpha if Console complains). |
+| 4.2 | 🔲 **Screenshots** (min 2, rec 3–8) | Phone: 16:9 or 9:16, min 320px, max 3840px JPEG/PNG | Play Console → Main store listing | **Starter set included:** `screenshots/01_splash.png … 06_modifier.png` (true 1080×2340 renders, unique art per region + boss lair). Regenerate any time with `npm i @napi-rs/canvas && node scripts/screenshot.js`. For live captures, run on a real device and use `adb exec-out screencap -p > shot.png`. |
+| 4.3 | 🔲 Feature graphic (optional but recommended) | 1024×500 PNG/JPEG | Play Console → Main store listing | **Ready:** upload `screenshots/feature_graphic.png` (longship key art + "Viking Raid" + tagline, exact 1024×500). |
 | 4.4 | 🔲 Short description | ≤ 80 chars | Main store listing | e.g. *"Plunder, level & set sail. An epic Viking raiding RPG."* |
 | 4.5 | 🔲 Full description | ≤ 4000 chars | Main store listing | Expand on features: loops, loot, runes, daily quests, prestige, offline play. |
 | 4.6 | 🔲 App category / tags | Game ▸ Role Playing (or Strategy) | Main store listing | Tags: idle, rpg, viking, clicker, incremental. |

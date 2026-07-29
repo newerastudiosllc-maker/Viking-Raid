@@ -24,13 +24,13 @@ async function loadIm(name, file) { IMG[name] = await loadImage(path.resolve(__d
 function fmt(n) { n = Math.floor(n); if (n < 1000) return "" + n; const u = ["K","M","B","T","aa","ab"]; let i=-1; while(n>=1000&&i<u.length-1){n/=1000;i++;} return n.toFixed(n<10?1:0)+u[i]; }
 function hpColor(f) { return f > 0.5 ? "#5fd17a" : f > 0.25 ? "#e0c14a" : "#e0533d"; }
 function roundRect(c, x, y, w, h, r) { r = Math.min(r, w/2, h/2); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
-function sceneImg(region) { const a = DATA.regionArt(region).art; return a === "scene_forest" ? IMG.forest : a === "scene_fortress" ? IMG.fortress : IMG.village; }
+function sceneImg(region, isBoss) { if (isBoss && IMG.scene_bosslair) return IMG.scene_bosslair; const a = DATA.regionArt(region).art; return IMG[a] || IMG.scene_village; }
 
-function drawBackground(c, region) {
+function drawBackground(c, region, isBoss) {
   const tint = DATA.regionArt(region).tint || "#10131f";
   const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, tint); g.addColorStop(1, "#05070c");
   c.fillStyle = g; c.fillRect(0, 0, W, H);
-  const im = sceneImg(region);
+  const im = sceneImg(region, isBoss);
   if (im) { const sc = Math.max(W / im.width, H / im.height), dw = im.width * sc, dh = im.height * sc; c.globalAlpha = 0.94; c.drawImage(im, (W - dw) / 2, (H - dh) / 2, dw, dh); c.globalAlpha = 1; }
   const top = c.createLinearGradient(0, 0, 0, H * 0.30); top.addColorStop(0, "rgba(5,7,12,0.78)"); top.addColorStop(1, "rgba(5,7,12,0)"); c.fillStyle = top; c.fillRect(0, 0, W, H * 0.30);
   const bot = c.createLinearGradient(0, H * 0.52, 0, H); bot.addColorStop(0, "rgba(5,7,12,0)"); bot.addColorStop(1, "rgba(5,7,12,0.93)"); c.fillStyle = bot; c.fillRect(0, H * 0.52, W, H * 0.48);
@@ -185,9 +185,14 @@ async function shot(name, drawFn) {
 }
 
 async function main() {
-  await loadIm("village", "scene_village.png");
-  await loadIm("forest", "scene_forest.png");
-  await loadIm("fortress", "scene_fortress.png");
+  await loadIm("scene_village", "scene_village.png");
+  await loadIm("scene_forest", "scene_forest.png");
+  await loadIm("scene_fortress", "scene_fortress.png");
+  await loadIm("scene_frozen_shore", "scene_frozen_shore.png");
+  await loadIm("scene_fjords", "scene_fjords.png");
+  await loadIm("scene_marches", "scene_marches.png");
+  await loadIm("scene_cliffs", "scene_cliffs.png");
+  await loadIm("scene_bosslair", "scene_bosslair.png");
   await loadIm("hero", "hero_chieftain.png");
   await loadIm("logo", "logo.png");
   const time = 1.2;
@@ -220,7 +225,7 @@ async function main() {
     const st = makeState({ region: 0, villageIndex: CONFIG.BOSS_INDEX, rage: 0.6 });
     Sys.init(st); const v = G.village; v.hp = v.maxHp * 0.30; v.hitFlash = 0.7; v.staggered = true; v.fury = true;
     G.runtime.bossBanner = 1.35;
-    buildWeather(st.region); drawBackground(c, st.region); drawWeather(c, st.region);
+    buildWeather(st.region); drawBackground(c, st.region, true); drawWeather(c, st.region);
     drawTarget(c, v, time); drawBossBanner(c, v, G.runtime.bossBanner); drawShip(c, st.shipHp*0.6, G.derived.shipMaxHp);
     drawFloaters(c, [ {x:W*0.5,y:H*0.34,t:"18,420!",c:"#ffd54a",a:1,big:true},{x:W*0.4,y:H*0.30,t:"7,310",c:"#fff",a:0.85} ]);
     drawChrome(c, st, v);

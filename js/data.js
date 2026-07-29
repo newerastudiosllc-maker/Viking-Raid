@@ -162,12 +162,12 @@
 
     // --- Regions (first several hand-authored, then procedural) ------
     REGIONS: [
-      { name: "The Frozen Shore",   art: "scene_village",  tint: "#1b2a3a", weather: "snow" },
-      { name: "Whispering Fjords",  art: "scene_village",  tint: "#243440", weather: "mist" },
-      { name: "Ironwood Forest",    art: "scene_forest",   tint: "#16241a", weather: "embers" },
-      { name: "Blackpine Marches",  art: "scene_forest",   tint: "#1a2230", weather: "rain" },
-      { name: "Stormhold Keep",     art: "scene_fortress", tint: "#10131f", weather: "storm" },
-      { name: "Thunder Cliffs",     art: "scene_fortress", tint: "#0e1322", weather: "storm" },
+      { name: "The Frozen Shore",   art: "scene_frozen_shore", tint: "#1b2a3a", weather: "snow" },
+      { name: "Whispering Fjords",  art: "scene_fjords",       tint: "#243440", weather: "mist" },
+      { name: "Ironwood Forest",    art: "scene_forest",       tint: "#16241a", weather: "embers" },
+      { name: "Blackpine Marches",  art: "scene_marches",      tint: "#1a2230", weather: "rain" },
+      { name: "Stormhold Keep",     art: "scene_fortress",     tint: "#10131f", weather: "storm" },
+      { name: "Thunder Cliffs",     art: "scene_cliffs",       tint: "#0e1322", weather: "storm" },
     ],
 
     // --- Weather profiles (rendered as canvas particles) -------------
@@ -344,7 +344,7 @@
       if (index < DATA.REGIONS.length) return DATA.REGIONS[index];
       // cycle art, darkening tints for deeper regions
       const base = DATA.REGIONS[index % DATA.REGIONS.length];
-      return { name: DATA.regionName(index), art: base.art, tint: base.tint };
+      return { name: DATA.regionName(index), art: base.art, tint: base.tint, weather: base.weather };
     },
 
     // Compose a flavourful item name from its slot + rarity.

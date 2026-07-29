@@ -112,8 +112,9 @@ npm install
 # 2. Build the offline web bundle into ./www
 npm run build:web
 
-# 3. Generate native icons & splash from assets/icon-1024.png
-npm install -D @capacitor/assets && npx capacitor-assets generate
+# 3. Generate native icons & splash screens (zero-config — the assets/ folder
+#    already contains icon-only/icon-foreground/icon-background/splash/splash-dark)
+npm install -D @capacitor/assets && npx capacitor-assets generate --android
 
 # 4. Add the Android platform (creates ./android)
 npx cap add android
@@ -145,7 +146,9 @@ Viking-Raid/
 ├─ manifest.webmanifest     # PWA manifest (installable, offline)
 ├─ sw.js                    # Service worker (offline app shell)
 ├─ capacitor.config.json    # Android packaging config (Play Store)
-├─ assets/                  # AI-generated art (logo, icon-1024, hero, scenes)
+├─ assets/                  # AI-generated art — runtime scenes (6 regions + boss lair,
+│                           #   hero, logo, PWA icons) + packaging sources
+│                           #   (icon-only/foreground/background, splash, splash-dark)
 ├─ js/
 │  ├─ config.js             # ⚙️ All balance constants & formula helpers (TUNE HERE)
 │  ├─ data.js               # Static defs: stats, upgrades, saga, regions, names

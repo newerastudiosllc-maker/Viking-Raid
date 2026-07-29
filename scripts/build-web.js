@@ -16,11 +16,26 @@ const INCLUDE = [
   "js",
 ];
 
+// Packaging-only art (icon/splash sources for @capacitor/assets, store art).
+// Not referenced at runtime — keep them out of the shipped web bundle.
+const EXCLUDE = new Set([
+  "assets/splash.png",
+  "assets/splash-dark.png",
+  "assets/splash-2732.png",
+  "assets/icon-only.png",
+  "assets/icon-foreground.png",
+  "assets/icon-background.png",
+  "assets/icon-1024.png",
+  "assets/feature_graphic_art.png",
+]);
+
 function rmrf(p) {
   if (!fs.existsSync(p)) return;
   fs.rmSync(p, { recursive: true, force: true });
 }
 function copy(src, dest) {
+  const rel = path.relative(ROOT, src).split(path.sep).join("/");
+  if (EXCLUDE.has(rel)) return;
   const stat = fs.statSync(src);
   if (stat.isDirectory()) {
     fs.mkdirSync(dest, { recursive: true });

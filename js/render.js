@@ -36,9 +36,14 @@
   Render.init = function (canvas) {
     cv = canvas;
     ctx = canvas.getContext("2d");
-    loadImage("village", "assets/scene_village.png");
-    loadImage("forest", "assets/scene_forest.png");
-    loadImage("fortress", "assets/scene_fortress.png");
+    loadImage("scene_village", "assets/scene_village.png");
+    loadImage("scene_forest", "assets/scene_forest.png");
+    loadImage("scene_fortress", "assets/scene_fortress.png");
+    loadImage("scene_frozen_shore", "assets/scene_frozen_shore.png");
+    loadImage("scene_fjords", "assets/scene_fjords.png");
+    loadImage("scene_marches", "assets/scene_marches.png");
+    loadImage("scene_cliffs", "assets/scene_cliffs.png");
+    loadImage("scene_bosslair", "assets/scene_bosslair.png");
     loadImage("hero", "assets/hero_chieftain.png");
     loadImage("logo", "assets/logo.png");
     for (let i = 0; i < 26; i++) {
@@ -211,13 +216,12 @@
 
   function regionArtName(region) {
     const art = DATA.regionArt(region).art;
-    return art; // scene_village/forest/fortress
+    return images[art] ? art : "scene_village";
   }
-  function artImage(region) {
-    const a = regionArtName(region);
-    if (a === "scene_forest") return images.forest;
-    if (a === "scene_fortress") return images.fortress;
-    return images.village;
+  function artKey() {
+    const v = G.village;
+    if (v && v.isBoss && images["scene_bosslair"]) return "scene_bosslair";
+    return regionArtName(v ? v.region : 0);
   }
 
   function drawBackground() {
@@ -230,8 +234,9 @@
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
-    const im = artImage(v.region);
-    if (im && imgReady[im === images.village ? "village" : im === images.forest ? "forest" : "fortress"]) {
+    const key = artKey();
+    const im = images[key];
+    if (im && imgReady[key]) {
       // cover-fit with subtle bob
       const bob = Math.sin(time * 0.6) * 4;
       const iw = im.naturalWidth, ih = im.naturalHeight;
