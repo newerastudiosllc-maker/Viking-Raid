@@ -1,0 +1,21 @@
+# Node / Capacitor
+node_modules/
+www/
+android/
+ios/
+.gradle/
+.build/
+
+# Build artifacts
+*.apk
+*.aab
+*.keystore
+*.jks
+keystore.properties
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log

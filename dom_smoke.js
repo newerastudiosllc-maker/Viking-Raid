@@ -1,0 +1,381 @@
+/* Full runtime smoke test: real DOM (jsdom) + mocked canvas/audio.
+   Injects each script as a real <script> (runScripts:"dangerously") so
+   globals attach to the window, then boots and exercises the UI. */
+const { JSDOM } = require("jsdom");
+const fs = require("fs");
+
+function noop() {}
+function makeCtx() {
+  const store = {};
+  return new Proxy(store, {
+    get(t, p) {
+      if (p === "createLinearGradient" || p === "createRadialGradient" || p === "createPattern")
+        return () => ({ addColorStop: noop });
+      if (p === "measureText") return () => ({ width: 12 });
+      if (p in t) return t[p];
+      if (p === "canvas") return { width: 0, height: 0, getBoundingClientRect: () => ({ width: 320, height: 560, left: 0, top: 0 }) };
+      return noop;
+    },
+    set(t, p, v) { t[p] = v; return true; },
+  });
+}
+
+const rawHtml = fs.readFileSync("index.html", "utf8").replace(/<script[\s\S]*?<\/script>/g, "");
+const dom = new JSDOM(rawHtml, { url: "http://localhost/", runScripts: "dangerously", pretendToBeVisual: true });
+const { window } = dom;
+
+// ---- install mocks BEFORE scripts run ----
+window.HTMLCanvasElement.prototype.getContext = function () { return makeCtx(); };
+let rafCb = null;
+window.requestAnimationFrame = (cb) => { rafCb = cb; return 1; };
+window.cancelAnimationFrame = noop;
+window.AudioContext = window.webkitAudioContext = function () {
+  const param = () => ({ value: 0, setValueAtTime: noop, exponentialRampToValueAtTime: noop, linearRampToValueAtTime: noop });
+  return { state: "running", currentTime: 0, destination: {}, createGain: () => ({ gain: param(), connect: noop }), createOscillator: () => ({ frequency: param(), type: "", connect: noop, start: noop, stop: noop }), createBuffer: () => ({ getChannelData: () => new Float32Array(8) }), createBufferSource: () => ({ connect: noop, start: noop }), createBiquadFilter: () => ({ frequency: param(), connect: noop }), resume: noop };
+};
+try { Object.defineProperty(window.navigator, "vibrate", { value: () => true, configurable: true }); } catch (e) {}
+
+let errors = [];
+window.addEventListener("error", (e) => errors.push("window.error: " + (e.error ? e.error.stack : e.message)));
+
+// ---- inject scripts in order ----
+const files = ["js/config.js", "js/data.js", "js/state.js", "js/systems.js", "js/render.js", "js/audio.js", "js/ui.js", "js/main.js"];
+for (const f of files) {
+  const s = window.document.createElement("script");
+  s.textContent = fs.readFileSync(f, "utf8");
+  window.document.body.appendChild(s);
+}
+// Mirror real-browser timing: scripts are parsed in-document before
+// DOMContentLoaded fires, so dispatch it now to trigger main.js boot.
+window.document.dispatchEvent(new window.Event("DOMContentLoaded", { bubbles: true }));
+
+const doc = window.document;
+const G = () => window.G;
+function driveFrames(n) {
+  let t = 1000;
+  for (let i = 0; i < n; i++) {
+    t += 16;
+    try { if (rafCb) rafCb(t); } catch (e) { errors.push("frame " + i + ": " + e.stack); }
+  }
+}
+function click(sel) {
+  const elx = doc.querySelector(sel);
+  if (!elx) { errors.push("click: not found " + sel); return null; }
+  try { elx.dispatchEvent(new window.Event("click", { bubbles: true })); } catch (e) { errors.push("click " + sel + ": " + e.stack); }
+  return elx;
+}
+let checks = [];
+function check(name, fn) { try { fn(); checks.push("✓ " + name); } catch (e) { checks.push("✗ " + name + " — " + e.message); errors.push(name + ": " + e.stack); } }
+
+driveFrames(5);
+
+check("game booted (G.state)", () => { if (!G() || !G().state) throw new Error("no state"); });
+check("village present", () => { if (!G().village) throw new Error("no village"); });
+check("derived computed", () => { if (!G().derived || !G().derived.tapDmg) throw new Error("no derived"); });
+
+G().state.gold = 1e12; G().state.unspentStatPoints = 20; G().state.level = 30;
+window.Sys.recompute();
+
+check("switch to Forge", () => { click('#tabs .tab[data-tab="forge"]'); if (doc.querySelector("#panelForge").style.display !== "block") throw new Error("forge not shown"); });
+check("forge list populated", () => { if (!doc.querySelector("#forgeList .upg")) throw new Error("no cards"); });
+check("buy axe upgrade", () => {
+  const card = doc.querySelector('#forgeList .upg[data-id="axe"]');
+  card.querySelector("[data-buy]").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if ((G().state.upgrades.axe || 0) < 1) throw new Error("not bought");
+});
+check("switch to Hero", () => { click('#tabs .tab[data-tab="hero"]'); });
+check("allocate stat point", () => {
+  const row = doc.querySelector('#statList .stat[data-id="str"]');
+  row.querySelector("[data-add]").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (G().state.stats.str < 1) throw new Error("not allocated");
+});
+check("derived stats render", () => { if (!doc.querySelector("#derivedStats .ds")) throw new Error("no rows"); });
+check("switch to Saga", () => { click('#tabs .tab[data-tab="saga"]'); });
+check("prestige locked below req", () => { G().state.highestRegion = 1; window.UI.refreshSaga(); if (!doc.querySelector("#sagaPrestige").classList.contains("disabled")) throw new Error("should be locked"); });
+
+check("activate berserk ability", () => {
+  G().state.abilities.berserk.cdLeft = 0; G().state.abilities.berserk.activeLeft = 0;
+  window.Sys.recompute();
+  doc.querySelector('.ab-btn[data-ab="berserk"]').dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (G().state.abilities.berserk.activeLeft <= 0) throw new Error("not activated");
+});
+
+check("raid tab + canvas tap damages", () => {
+  click('#tabs .tab[data-tab="raid"]');
+  const stage = doc.getElementById("stage");
+  const before = G().village.hp;
+  const ev = new window.Event("pointerdown", { bubbles: true });
+  stage.dispatchEvent(ev);
+  if (G().village.hp >= before && G().village.hp > 0) throw new Error("no damage");
+});
+
+check("ticks advance raids", () => {
+  const r0 = G().state.totals.raids;
+  G().village.hp = 0.0001;
+  for (let i = 0; i < 3; i++) window.Sys.tick(2);
+  if (G().state.totals.raids <= r0) throw new Error("no advance");
+});
+
+check("prestige grants shards + reset", () => {
+  G().state.highestRegion = 5;
+  const before = G().state.saga.shards;
+  window.Sys.doPrestige();
+  if (G().state.saga.shards <= before || G().state.region !== 0) throw new Error("prestige failed");
+});
+
+check("buy saga upgrade", () => {
+  G().state.saga.shards = 1000;
+  window.Sys.buySaga("plunder");
+  if ((G().state.saga.upgrades.plunder || 0) < 1) throw new Error("not bought");
+});
+
+check("settings toggle", () => {
+  const s = G().state.settings.sfx;
+  doc.getElementById("setSfx").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (G().state.settings.sfx === s) throw new Error("did not toggle");
+});
+
+check("save round-trips", () => { window.State.save(G().state); const ld = window.State.load(); if (!ld || !ld.state) throw new Error("no load"); });
+
+check("loot tab renders equip slots", () => {
+  click('#tabs .tab[data-tab="loot"]');
+  if (doc.querySelectorAll("#equipSlots .eqslot").length !== 4) throw new Error("expected 4 slots");
+  if (!doc.querySelector("#invList")) throw new Error("no inventory");
+});
+check("equip an item updates derived", () => {
+  const it = window.Sys.genItem(0, {});
+  it.affixes = [{ stat: "tapPct", base: 0.5, rarity: 5 }];
+  it.slot = "weapon";
+  window.Sys._addItem(it);
+  const before = window.Sys.ensureDerived().tapDmg;
+  window.Sys.equipItem(it.uid);
+  window.Sys.recompute();
+  if (window.Sys.ensureDerived().tapDmg <= before) throw new Error("equip did not boost");
+});
+check("enchant via UI detail button", () => {
+  const it = window.Sys.genItem(0, {});
+  window.Sys._addItem(it);
+  G().state.loot.runes = 1e6; G().state.gold = 1e9;
+  window.UI.refreshLoot(); // sync DOM after Sys mutation
+  const node = doc.querySelector('.inv-item[data-uid="' + it.uid + '"]');
+  if (!node) throw new Error("item not rendered");
+  node.dispatchEvent(new window.Event("click", { bubbles: true })); // select
+  const before = it.level;
+  const btn = doc.querySelector('[data-act="enchant"]');
+  if (!btn) throw new Error("no enchant button");
+  btn.dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (it.level !== before + 1) throw new Error("enchant did not apply");
+});
+check("daily modal open + claim", () => {
+  window.Sys.dailyRollover();
+  const q0 = G().state.dailies.quests[0];
+  window.Sys.daily(q0.track, q0.goal + 5);
+  doc.getElementById("dailyBtn").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (!doc.getElementById("modalDaily").classList.contains("show")) throw new Error("modal not shown");
+  const claimBtn = doc.querySelector("#dailyList .dq-claim");
+  if (!claimBtn || claimBtn.classList.contains("disabled")) throw new Error("claim not ready");
+  claimBtn.dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (!q0.claimed) throw new Error("not claimed");
+  window.UI.closeModal("modalDaily");
+});
+
+check("achievements modal renders list", () => {
+  doc.getElementById("achBtn").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (!doc.getElementById("modalAchievements").classList.contains("show")) throw new Error("not shown");
+  if (!doc.querySelector("#achList .ach")) throw new Error("no items");
+  window.UI.closeModal("modalAchievements");
+});
+
+check("onboarding coach shows + advances", () => {
+  G().state.onboarding.dismissed = false;
+  window.OB.show();
+  if (!doc.getElementById("onboarding").classList.contains("show")) throw new Error("not shown");
+  doc.getElementById("obNext").dispatchEvent(new window.Event("click", { bubbles: true }));
+  window.OB.skip();
+  if (doc.getElementById("onboarding").classList.contains("show")) throw new Error("did not dismiss");
+});
+
+check("loot auto-equip toggle flips", () => {
+  const before = G().state.settings.autoEquip;
+  doc.getElementById("ltAutoToggle").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (G().state.settings.autoEquip === before) throw new Error("did not toggle");
+});
+
+check("stat preset allocates points", () => {
+  click('#tabs .tab[data-tab="hero"]');
+  G().state.unspentStatPoints = 9;
+  const strBefore = G().state.stats.str;
+  doc.querySelector('.preset-btn[data-preset="tap"]').dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (G().state.unspentStatPoints !== 0 || G().state.stats.str <= strBefore) throw new Error("preset failed");
+});
+
+check("combo builds on repeated taps", () => {
+  click('#tabs .tab[data-tab="raid"]');
+  const stage = doc.getElementById("stage");
+  for (let i = 0; i < 5; i++) stage.dispatchEvent(new window.Event("pointerdown", { bubbles: true }));
+  if (G().runtime.combo < 5) throw new Error("combo not built (got " + G().runtime.combo + ")");
+});
+
+check("ragnarok button unleashes when rage full", () => {
+  G().runtime.rage = window.CONFIG.RAGE_CAP;
+  const btn = doc.getElementById("ragBtn");
+  if (!btn) throw new Error("no rag button");
+  btn.dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (G().runtime.ragBuff <= 0) throw new Error("ragnarok did not unleash");
+});
+
+check("modifier renders in region badge", () => {
+  G().village.mod = window.DATA.MODIFIER_BY_ID["wealthy"];
+  window.UI.update();
+  if (doc.getElementById("regionBadge").textContent.indexOf("Wealthy") < 0) throw new Error("modifier not shown");
+});
+
+check("warband unit cards render in forge", () => {
+  const cards = doc.querySelectorAll("#unitList .unit");
+  if (cards.length !== 3) throw new Error("expected 3 unit cards, got " + cards.length);
+});
+
+check("hire button hires a unit", () => {
+  G().state.level = 20;
+  G().state.gold = 1e9;
+  G().dirty = true;
+  window.UI.refreshForge();
+  const btn = doc.querySelector('#unitList .unit[data-unit="berserker"] [data-hire]');
+  if (!btn) throw new Error("no hire button");
+  btn.dispatchEvent(new window.Event("click", { bubbles: true }));
+  if ((G().state.units.berserker || 0) < 1) throw new Error("berserker not hired");
+});
+
+check("unit count shown after hire", () => {
+  window.UI.refreshForge();
+  const cnt = doc.querySelector('#unitList .unit[data-unit="berserker"] [data-count]');
+  if (!cnt || cnt.textContent.indexOf("×") < 0 || cnt.textContent === "×0") throw new Error("count not updated: " + (cnt && cnt.textContent));
+});
+
+check("locked unit shows unlock level", () => {
+  G().state.level = 1;
+  G().dirty = true;
+  window.UI.refreshForge();
+  const card = doc.querySelector('#unitList .unit[data-unit="shieldmaiden"]');
+  if (!card.classList.contains("locked")) throw new Error("shieldmaiden should be locked at level 1");
+  const bc = card.querySelector(".bc");
+  if (bc.textContent.indexOf("Lv") < 0) throw new Error("no unlock label");
+});
+
+check("route choice modal renders 3 cards", () => {
+  window.UI.showRouteChoice();
+  const cards = doc.querySelectorAll("#routeList .route-card");
+  if (cards.length !== 3) throw new Error("expected 3 route cards, got " + cards.length);
+  if (!doc.getElementById("modalRoute").classList.contains("show")) throw new Error("modal not shown");
+});
+
+check("clicking a route card selects it and closes modal", () => {
+  const card = doc.querySelector('#routeList .route-card[data-route="storm"]');
+  card.dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (G().state.route !== "storm") throw new Error("route not set: " + G().state.route);
+  if (doc.getElementById("modalRoute").classList.contains("show")) throw new Error("modal still open");
+});
+
+check("route badge shows in HUD", () => {
+  window.UI.update();
+  if (doc.getElementById("regionBadge").textContent.indexOf("Storm Strait") < 0) throw new Error("route not in badge");
+});
+
+check("map opens with a full trail", () => {
+  doc.getElementById("mapBtn").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (!doc.getElementById("modalMap").classList.contains("show")) throw new Error("map modal not shown");
+  const nodes = doc.querySelectorAll("#mapTrail .map-node:not(.teaser)");
+  if (nodes.length !== window.CONFIG.VILLAGES_PER_REGION) throw new Error("expected " + window.CONFIG.VILLAGES_PER_REGION + " nodes, got " + nodes.length);
+});
+
+check("map marks current village and next-region teaser", () => {
+  if (!doc.querySelector("#mapTrail .map-node.current")) throw new Error("no current node");
+  if (!doc.querySelector("#mapTrail .map-node.teaser")) throw new Error("no teaser node");
+  doc.getElementById("mapClose").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (doc.getElementById("modalMap").classList.contains("show")) throw new Error("map did not close");
+});
+
+check("cache clear fires toast reward", () => {
+  const caches = window.Sys.cacheIndices(G().state.region);
+  G().state.villageIndex = caches[0];
+  window.Sys.setVillage(G().state.region, caches[0]);
+  const runes0 = G().state.loot.runes;
+  G().village.hp = 0;
+  window.Sys.clearVillage();
+  if (G().state.loot.runes <= runes0) throw new Error("cache runes not granted");
+  if ((G().state.totals.caches || 0) < 1) throw new Error("cache not counted");
+});
+
+check("frenzy builds on chained clears", () => {
+  for (let i = 0; i < 3; i++) { G().village.hp = 0; window.Sys.clearVillage(); }
+  if (G().runtime.frenzy < 2) throw new Error("frenzy did not stack: " + G().runtime.frenzy);
+});
+
+check("epic drop banner animates", () => {
+  const it = window.Sys.genItem(3, { rarityBonus: 3 });
+  window.UI.dropBanner(it);
+  const bn = doc.getElementById("dropBanner");
+  if (!bn.classList.contains("show")) throw new Error("banner not shown");
+  if (!doc.getElementById("dbName").textContent) throw new Error("banner name empty");
+});
+
+check("gold counter pops on gain", () => {
+  window.UI.update();
+  G().state.gold += 100000;
+  window.UI.update();
+  if (!doc.getElementById("gold").classList.contains("pop")) throw new Error("no pop class");
+});
+
+check("storm banner shows during a rune storm", () => {
+  const orig = window.Sys.activeStorm;
+  window.Sys.activeStorm = function () { return window.DATA.STORMS[0]; };
+  window.UI.update();
+  const bn = doc.getElementById("stormBanner");
+  if (bn.style.display === "none") throw new Error("banner hidden during storm");
+  if (doc.getElementById("stormName").textContent.indexOf("GOLD GALE") < 0) throw new Error("wrong storm name");
+  window.Sys.activeStorm = function () { return null; };
+  window.UI.update();
+  if (bn.style.display !== "none") throw new Error("banner not hidden after storm");
+  window.Sys.activeStorm = orig;
+});
+
+check("hall of legends opens with sections", () => {
+  doc.getElementById("hallBtn").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (!doc.getElementById("modalHall").classList.contains("show")) throw new Error("hall not shown");
+  if (doc.querySelectorAll("#hallRarities .hall-chip").length !== 6) throw new Error("rarity chips missing");
+  if (doc.querySelectorAll("#hallMods .hall-chip").length < 5) throw new Error("mod chips missing");
+  doc.getElementById("hallClose").dispatchEvent(new window.Event("click", { bubbles: true }));
+});
+
+check("valhalla section renders 4 boons", () => {
+  click('#tabs .tab[data-tab="saga"]');
+  const boons = doc.querySelectorAll("#boonList .boon");
+  if (boons.length !== 4) throw new Error("expected 4 boons, got " + boons.length);
+});
+
+check("boon purchase flows through UI", () => {
+  G().state.valhalla.marks = 10;
+  window.UI.refreshSaga();
+  const btn = doc.querySelector('#boonList .boon[data-id="wrath"] [data-buy]');
+  btn.dispatchEvent(new window.Event("click", { bubbles: true }));
+  if ((G().state.valhalla.boons.wrath || 0) < 1) throw new Error("boon not bought");
+});
+
+check("ascend button reflects availability", () => {
+  G().state.saga.totalEarned = 60;
+  G().state.valhalla.shardsAtAscend = 0;
+  window.UI.refreshSaga();
+  const btn = doc.getElementById("valAscend");
+  if (btn.classList.contains("disabled")) throw new Error("ascend should be enabled with 60 lifetime shards");
+  if (btn.textContent.indexOf("+⚡2") < 0) throw new Error("gain not shown: " + btn.textContent);
+});
+
+driveFrames(10);
+
+console.log("\n== CHECKS ==");
+checks.forEach((c) => console.log("  " + c));
+console.log("\n== ERRORS (" + errors.length + ") ==");
+errors.forEach((e) => console.log("  " + e.split("\n")[0]));
+const cp = checks.filter((c) => c.startsWith("✓")).length;
+console.log("\nSMOKE: " + cp + "/" + checks.length + " checks passed, " + errors.length + " errors\n");
+process.exit(errors.length || cp < checks.length ? 1 : 0);

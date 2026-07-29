@@ -1,0 +1,183 @@
+/* ============================================================
+   VIKING RAID — main.js
+   Bootstrap, fixed-timestep loop, input, autosave, offline,
+   event wiring (sfx + toast + fx hooks).
+   New Era Studios LLC
+   ============================================================ */
+(function () {
+  "use strict";
+
+  let canvas, lastFrame, acc = 0;
+  let hiddenAt = 0;
+  let frameCount = 0;
+
+  function boot() {
+    canvas = document.getElementById("stage");
+    Render.init(canvas);
+    UI.init();
+
+    // load or fresh
+    const loaded = State.load();
+    let offlineReport = null;
+    if (loaded) {
+      Sys.init(loaded.state);
+      SFX.setEnabled(G.state.settings.sfx);
+      if (loaded.offlineMs > 60000) {
+        offlineReport = Sys.applyOffline(loaded.offlineMs);
+      }
+    } else {
+      Sys.init(State.defaults());
+      SFX.setEnabled(true);
+    }
+
+    wireEvents();
+    UI.setTab("raid");
+    UI.refreshHero();
+    UI.refreshSaga();
+
+    // autosave
+    setInterval(function () { State.save(G.state); }, CONFIG.SAVE_INTERVAL_MS);
+    window.addEventListener("beforeunload", function () { State.save(G.state); });
+    document.addEventListener("visibilitychange", onVisibility);
+
+    lastFrame = performance.now();
+    requestAnimationFrame(loop);
+
+    if (offlineReport) setTimeout(function () { UI.showOffline(offlineReport); }, 600);
+  }
+
+  function onVisibility() {
+    if (document.hidden) {
+      G.paused = true;
+      hiddenAt = Date.now();
+      State.save(G.state);
+    } else {
+      G.paused = false;
+      const away = Date.now() - hiddenAt;
+      if (hiddenAt && away > 60000) {
+        const rep = Sys.applyOffline(away);
+        if (rep) UI.showOffline(rep);
+      }
+      hiddenAt = 0;
+      lastFrame = performance.now();
+      acc = 0;
+    }
+  }
+
+  function wireEvents() {
+    G.on("clear", function (d) {
+      if (G.fx) G.fx.clearBurst(d.boss);
+      if (d.boss) { SFX.boss(); UI.toast("☠ BOSS LAIR SACKED! +" + Render.formatNum(d.gold) + " 🪙", 2400); }
+      else SFX.clear();
+    });
+    G.on("cache", function (d) {
+      if (G.fx) G.fx.clearBurst(true);
+      SFX.upgrade();
+      UI.toast("💰 TREASURE CACHE! +" + Render.formatNum(d.gold) + " 🪙 · +" + d.runes + " 🔮", 2600);
+    });
+    G.on("regionChest", function (d) {
+      if (G.fx) G.fx.levelUp();
+      SFX.boss();
+      UI.toast("🗝️ THE JARL'S CHEST! +" + Render.formatNum(d.gold) + " 🪙 + " + d.item.name, 3000);
+    });
+    G.on("frenzy", function (stacks) {
+      if (G.fx && G.fx.frenzyUp) G.fx.frenzyUp(stacks);
+      if (SFX.combo) SFX.combo(Math.min(10, stacks * 2));
+    });
+    G.on("ascend", function (marks) {
+      if (G.fx) { G.fx.levelUp(); G.fx.ragnarok && G.fx.ragnarok(); }
+      SFX.prestige();
+      UI.toast("⚡ ASCENDED TO VALHALLA! +" + marks + " Marks — spend them on godly boons.", 3600);
+      UI.refreshAll && UI.refreshAll();
+    });
+    G.on("boon", function (d) {
+      const def = DATA.BOON_BY_ID[d.id];
+      UI.toast(def.icon + " " + def.name + " — Rank " + d.rank + "! This power is forever.", 2600);
+    });
+    G.on("levelup", function (lvl) {
+      if (G.fx) G.fx.levelUp();
+      SFX.level();
+      UI.toast("⭐ Level " + lvl + "! +" + CONFIG.STAT_POINTS_PER_LEVEL + " stat points");
+      UI.refreshHero();
+    });
+    G.on("retreat", function () {
+      if (G.fx) G.fx.retreatFx();
+      SFX.retreat();
+      UI.toast("⛵ Your longship retreated! Repair or reinforce.", 2600);
+    });
+    G.on("newRegion", function (reg) {
+      UI.toast("🗺️ New region: " + DATA.regionName(reg));
+    });
+    G.on("bossStagger", function () { SFX.ability(); UI.toast("💥 BOSS STAGGERED — burst it down!", 2200); });
+    G.on("bossFury", function () { SFX.retreat(); UI.toast("😡 The Boss ENRAGES — raise shields!", 2400); });
+    G.on("drop", function (it) {
+      const R = DATA.RARITY[it.rarity];
+      if (it.rarity >= 3) {
+        SFX.boss();
+        UI.dropBanner(it);
+        if (G.fx) G.fx.burst(window.innerWidth / 2, window.innerHeight * 0.34, R.color, 30);
+      }
+      else UI.toast(R.name + " loot — " + it.name, 1400);
+    });
+    G.on("newDay", function () {
+      SFX.level();
+      UI.toast("📜 New daily Saga quests available!", 2800);
+    });
+    G.on("dailyClaim", function () { SFX.level(); });
+    G.on("achievements", function (list) {
+      SFX.achievement();
+      list.forEach(function (a) {
+        UI.toast(a.icon + " Achievement: " + a.name + "!", 2800);
+      });
+      UI.refreshAchievements && UI.refreshAchievements();
+      UI.refreshHero();
+    });
+    G.on("loot", function () { UI.refreshLoot && UI.refreshLoot(); });
+    G.on("enchant", function () { SFX.upgrade(); });
+    G.on("stat", function () { UI.refreshHero(); });
+    G.on("upgrade", function () { UI.refreshForge(); });
+    G.on("hire", function (e) {
+      UI.refreshForge();
+      const def = DATA.UNIT_BY_ID[e.id];
+      if (def) UI.toast("⚜️ Hired " + e.count + " " + def.name + "!");
+    });
+    G.on("routeChoice", function () { UI.showRouteChoice(); });
+    G.on("route", function (rt) {
+      if (rt.id !== "calm") UI.toast(rt.emoji + " " + rt.name + " — " + rt.flavor);
+    });
+    G.on("sagaUpgrade", function () { UI.refreshSaga(); });
+    G.on("abilityEnd", function () {});
+    G.on("prestige", function () {});
+  }
+
+  function loop(now) {
+    let dtMs = now - lastFrame;
+    lastFrame = now;
+    if (dtMs > 250) dtMs = 250; // clamp after stalls
+    if (!G.paused) {
+      acc += dtMs;
+      const step = 1000 / CONFIG.TICK_HZ;
+      let guard = 0;
+      while (acc >= step && guard < 12) {
+        Sys.tick(step / 1000);
+        acc -= step;
+        guard++;
+      }
+      if (acc > step * 6) acc = 0;
+      Render.frame(dtMs);
+    }
+    frameCount++;
+    if (frameCount % 120 === 0) {
+      Sys.dailyRollover();      // detect midnight while playing
+      Sys.checkAchievements();  // unlock milestone rewards
+    }
+    UI.update();
+    requestAnimationFrame(loop);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();

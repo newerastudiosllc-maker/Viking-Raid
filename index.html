@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <meta name="theme-color" content="#0a0d14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Viking Raid" />
+  <meta name="description" content="Viking Raid — an epic incremental raiding RPG. Plunder villages, level your warband, and sail for new lands. By New Era Studios LLC." />
+  <title>Viking Raid</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="assets/icon-192.png" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cinzel+Decorative:wght@700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ===================== SPLASH ===================== -->
+  <div id="splash">
+    <div class="splash-inner">
+      <img class="splash-logo" src="assets/logo.png" alt="Viking Raid" />
+      <h1 class="splash-title">VIKING<br />RAID</h1>
+      <p class="splash-tag">Plunder. Level. Set sail for new lands.</p>
+      <button id="splashStart" class="splash-start">⚔ TAP TO BEGIN</button>
+      <div class="splash-studio">NEW ERA STUDIOS LLC</div>
+    </div>
+  </div>
+
+  <!-- ===================== HUD ===================== -->
+  <div id="hud">
+    <div class="hud-row top">
+      <div id="regionBadge" class="region-badge">
+        <span class="rb-name">—</span><span class="rb-sub">—</span>
+      </div>
+      <div class="hud-right">
+        <div id="levelBadge" class="level-badge">LVL 1</div>
+        <button id="mapBtn" class="icon-btn" aria-label="Saga chart">🗺️</button>
+        <button id="dailyBtn" class="icon-btn" aria-label="Daily quests">📜</button>
+        <button id="menuBtn" class="icon-btn" aria-label="Menu">⚙</button>
+      </div>
+    </div>
+    <div class="xp-track"><div id="xpFill" class="xp-fill"></div><span id="xpText" class="xp-text">0 / 0 XP</span></div>
+    <div class="hud-row bot">
+      <div id="gold" class="res">🪙 0</div>
+      <div id="combatStrip" class="combat-strip">
+        <span id="tapVal">⚔ 0</span><span id="crewVal">🪓 0/s</span>
+      </div>
+      <div id="shards" class="res shard">💎 0</div>
+    </div>
+    <button id="repairBtn" class="repair-btn" style="display:none">⚓ Repair</button>
+    <div id="stormBanner" class="storm-banner" style="display:none">
+      <span id="stormIcon"></span><span id="stormName"></span><span id="stormTimer"></span>
+    </div>
+  </div>
+
+  <!-- ===================== STAGE ===================== -->
+  <canvas id="stage"></canvas>
+
+  <!-- ===================== ABILITIES ===================== -->
+  <div id="abilities"></div>
+
+  <!-- ===================== PANEL (bottom sheet) ===================== -->
+  <div id="panel">
+    <!-- FORGE -->
+    <div id="panelForge" class="panel-pane">
+      <div class="panel-head">
+        <h2>🔨 The Forge</h2>
+        <button id="buyMode" class="buy-mode">x1</button>
+      </div>
+      <div id="forgeList" class="list"></div>
+      <h3 class="sub-head">⚜️ Warband Specialists</h3>
+      <div id="unitList" class="list"></div>
+    </div>
+    <!-- HERO -->
+    <div id="panelHero" class="panel-pane">
+      <div class="panel-head"><h2>🧔 Chieftain</h2>
+        <span id="unspentPts" class="unspent">0 pts</span>
+        <button id="hallBtn" class="icon-btn small" aria-label="Hall of Legends">🏛️</button>
+        <button id="achBtn" class="icon-btn small" aria-label="Achievements">🏆</button></div>
+      <div id="statList" class="list"></div>
+      <div id="presetRow" class="preset-row"></div>
+      <h3 class="sub-head">Battle Stats</h3>
+      <div id="derivedStats" class="ds-grid"></div>
+      <h3 class="sub-head">Abilities</h3>
+      <div id="abilityInfo" class="ab-info-list"></div>
+    </div>
+    <!-- LOOT -->
+    <div id="panelLoot" class="panel-pane">
+      <div class="panel-head"><h2>🎒 Hoard</h2>
+        <span class="res-mini">🔮 <span id="lootRunes">0</span> runes</span></div>
+      <div id="equipSlots" class="equip-slots"></div>
+      <div id="itemDetail" class="item-detail"></div>
+      <div class="loot-tools">
+        <button id="ltAutoEquip" class="lt-btn">⬆ Auto-Equip Best</button>
+        <button id="ltSalvage" class="lt-btn">♻ Salvage &lt; Rare</button>
+        <button id="ltAutoToggle" class="lt-btn">🔁 Auto-equip new: <b id="ltAutoState">Off</b></button>
+      </div>
+      <h3 class="sub-head">Inventory (<span id="invCount">0</span>/<span id="invCap">40</span>)</h3>
+      <div id="invList" class="inv-list"></div>
+    </div>
+    <!-- SAGA -->
+    <div id="panelSaga" class="panel-pane">
+      <div class="panel-head"><h2>🌀 Saga of Legends</h2></div>
+      <div class="saga-banner">
+        <p>Sail beyond the known world to begin a new saga. Earn <b>💎 Saga Shards</b> for permanent power.</p>
+        <div class="saga-stats">
+          <div><span>Shards</span><b id="sagaShards">0</b></div>
+          <div><span>Lifetime</span><b id="sagaTotal">0</b></div>
+          <div><span>On prestige</span><b id="sagaGain">+0</b></div>
+        </div>
+        <button id="sagaPrestige" class="prestige-btn">SET SAIL FOR NEW LANDS</button>
+      </div>
+      <h3 class="sub-head">Permanent Boons</h3>
+      <div id="sagaList" class="list"></div>
+      <h3 class="sub-head">⚡ Valhalla</h3>
+      <div class="valhalla-banner">
+        <p>When your legend grows vast, <b>ascend to Valhalla</b>: sacrifice your entire Saga — shards and boons — for <b>⚡ Marks of Valhalla</b> and godly powers that never reset.</p>
+        <div class="saga-stats">
+          <div><span>Marks</span><b id="valMarks">0</b></div>
+          <div><span>Ascensions</span><b id="valAsc">0</b></div>
+          <div><span>On ascend</span><b id="valGain">+0</b></div>
+        </div>
+        <button id="valAscend" class="prestige-btn valhalla-btn">ASCEND TO VALHALLA</button>
+      </div>
+      <div id="boonList" class="list"></div>
+    </div>
+  </div>
+
+  <!-- ===================== TABS ===================== -->
+  <nav id="tabs">
+    <button class="tab active" data-tab="raid"><img class="tab-ico" src="assets/icons/tab_raid.png" alt="" /><span>Raid</span></button>
+    <button class="tab" data-tab="forge"><img class="tab-ico" src="assets/icons/tab_forge.png" alt="" /><span>Forge</span></button>
+    <button class="tab" data-tab="hero"><img class="tab-ico" src="assets/icons/tab_hero.png" alt="" /><span>Hero</span></button>
+    <button class="tab" data-tab="loot"><img class="tab-ico" src="assets/icons/tab_loot.png" alt="" /><span>Loot</span></button>
+    <button class="tab" data-tab="saga"><img class="tab-ico" src="assets/icons/tab_saga.png" alt="" /><span>Saga</span></button>
+  </nav>
+
+  <!-- ===================== TOAST ===================== -->
+  <div id="toast" class="toast"></div>
+
+  <!-- ===================== EPIC DROP BANNER ===================== -->
+  <div id="dropBanner" class="drop-banner">
+    <div class="db-rarity" id="dbRarity">EPIC</div>
+    <div class="db-name" id="dbName"></div>
+    <div class="db-sub" id="dbSub"></div>
+  </div>
+
+  <!-- ===================== DAILY MODAL ===================== -->
+  <div id="modalDaily" class="modal">
+    <div class="modal-card">
+      <h2>📜 Daily Saga Quests</h2>
+      <div class="daily-meta">🔥 Streak: <b id="dailyStreak">0</b> &nbsp;·&nbsp; Resets at UTC midnight</div>
+      <div id="dailyList"></div>
+      <button id="dailyClose" class="btn-primary">Close</button>
+    </div>
+  </div>
+
+  <!-- ===================== HALL OF LEGENDS ===================== -->
+  <div id="modalHall" class="modal">
+    <div class="modal-card">
+      <h2>🏛️ Hall of Legends <span id="hallScore" class="ach-count"></span></h2>
+      <div class="hall-sub">Your saga, carved in stone. Every jarl slain, every treasure claimed.</div>
+      <h3>☠ Jarls Slain <span id="hallJarlCount" class="hall-count"></span></h3>
+      <div id="hallJarls" class="hall-grid"></div>
+      <h3>💎 Rarities Discovered <span id="hallRarityCount" class="hall-count"></span></h3>
+      <div id="hallRarities" class="hall-row"></div>
+      <h3>⚜️ Village Curses Broken <span id="hallModCount" class="hall-count"></span></h3>
+      <div id="hallMods" class="hall-row"></div>
+      <button id="hallClose" class="btn-primary">Close</button>
+    </div>
+  </div>
+
+  <!-- ===================== SAGA CHART (MAP) ===================== -->
+  <div id="modalMap" class="modal">
+    <div class="modal-card map-card">
+      <h2>🗺️ Saga Chart <span id="mapRegionName" class="map-region"></span></h2>
+      <div class="map-sub">Your voyage through this land. <b id="mapProgress"></b></div>
+      <div id="mapTrail" class="map-trail"></div>
+      <div class="map-legend">
+        <span>⚔ village</span><span>💰 treasure cache</span><span>☠ boss lair</span><span>🌫 uncharted</span>
+      </div>
+      <button id="mapClose" class="btn-primary">Back to the Raid</button>
+    </div>
+  </div>
+
+  <!-- ===================== EXPEDITION ROUTE MODAL ===================== -->
+  <div id="modalRoute" class="modal">
+    <div class="modal-card">
+      <h2>🧭 Chart Your Course</h2>
+      <div class="route-sub">A new region lies ahead. Choose your passage — it shapes every raid in this land.</div>
+      <div id="routeList"></div>
+    </div>
+  </div>
+
+  <!-- ===================== ACHIEVEMENTS MODAL ===================== -->
+  <div id="modalAchievements" class="modal">
+    <div class="modal-card">
+      <h2>🏆 Achievements <span id="achCount" class="ach-count"></span></h2>
+      <div id="achList" class="ach-list"></div>
+      <button id="achClose" class="btn-primary">Close</button>
+    </div>
+  </div>
+
+  <!-- ===================== ONBOARDING ===================== -->
+  <div id="onboarding" class="onboarding">
+    <div class="ob-card">
+      <div id="obIcon" class="ob-icon">⚔️</div>
+      <h3 id="obTitle">Welcome, Jarl!</h3>
+      <p id="obText">Tap the village to raid it.</p>
+      <div class="ob-actions">
+        <button id="obSkip" class="btn-ghost">Skip</button>
+        <button id="obNext" class="btn-primary">Got it</button>
+      </div>
+      <div id="obDots" class="ob-dots"></div>
+    </div>
+  </div>
+
+  <!-- ===================== MODALS ===================== -->
+  <div id="modalSettings" class="modal">
+    <div class="modal-card">
+      <h2>⚙ Settings</h2>
+      <button id="setSfx" class="toggle">🔊 Sound</button>
+      <button id="setMusic" class="toggle">🎵 Music</button>
+      <button id="setHaptics" class="toggle">📳 Haptics</button>
+      <button id="setFx" class="toggle">✨ Full Effects</button>
+      <hr />
+      <h3>Save Data</h3>
+      <textarea id="exportCode" readonly placeholder="Your save code appears here"></textarea>
+      <div class="set-row">
+        <button id="setExport" class="btn-ghost">📋 Copy Save</button>
+        <button id="setImport" class="btn-ghost">📥 Import</button>
+      </div>
+      <button id="setWipe" class="btn-danger">🗑 Erase All Progress</button>
+      <button id="setClose" class="btn-primary">Close</button>
+      <p class="version">Viking Raid v<span id="ver"></span> · New Era Studios LLC</p>
+    </div>
+  </div>
+
+  <div id="modalOffline" class="modal">
+    <div class="modal-card">
+      <div id="offReport"></div>
+      <button id="offClose" class="btn-primary">Claim</button>
+    </div>
+  </div>
+
+  <div id="modalPrestige" class="modal">
+    <div class="modal-card">
+      <h2>🌀 Begin a New Saga?</h2>
+      <div id="prestigeDetail"></div>
+      <div class="set-row">
+        <button id="prestigeCancel" class="btn-ghost">Cancel</button>
+        <button id="prestigeConfirm" class="btn-primary">Set Sail ⛵</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SCRIPTS ===================== -->
+  <script src="js/config.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/systems.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    document.getElementById("ver").textContent = (window.CONFIG || {}).VERSION || "1.0";
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>
