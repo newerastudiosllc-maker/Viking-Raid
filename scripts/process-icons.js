@@ -57,7 +57,7 @@ async function glyphIcon(name, size) {
 }
 
 async function main() {
-  for (const n of ["ab_berserk", "ab_shield", "ab_horn", "ab_valkyrie", "ab_ragnarok", "unit_berserker", "unit_archer", "unit_shieldmaiden"]) await circleIcon(n, 256);
+  for (const n of ["ab_berserk", "ab_shield", "ab_horn", "ab_valkyrie", "ab_ragnarok", "unit_berserker", "unit_archer", "unit_shieldmaiden", "route_calm", "route_storm", "route_cursed"]) await circleIcon(n, 256);
   for (const n of ["tab_raid", "tab_forge", "tab_hero", "tab_loot", "tab_saga"]) await glyphIcon(n, 128);
   console.log("\nAll UI icons processed.");
 }

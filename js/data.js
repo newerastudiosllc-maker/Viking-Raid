@@ -196,6 +196,39 @@
     ],
     UNIT_BY_ID: {},
 
+    // --- Expedition routes: pick your sea passage into each region ----
+    // Multipliers apply to every village in the region until the next one.
+    ROUTES: [
+      {
+        id: "calm",
+        name: "Calm Passage",
+        icon: "assets/icons/route_calm.png",
+        emoji: "⛵",
+        desc: "Safe waters. A steady, unremarkable raid.",
+        hp: 1.0, dps: 1.0, gold: 1.0, xp: 1.0, dropBonus: 0,
+        flavor: "The sea is kind today.",
+      },
+      {
+        id: "storm",
+        name: "Storm Strait",
+        icon: "assets/icons/route_storm.png",
+        emoji: "🌊",
+        desc: "Defenses hit +40% harder — but +65% gold and +30% XP.",
+        hp: 1.0, dps: 1.4, gold: 1.65, xp: 1.3, dropBonus: 0.06,
+        flavor: "Fortune favors those who dare the gale.",
+      },
+      {
+        id: "cursed",
+        name: "Cursed Channel",
+        icon: "assets/icons/route_cursed.png",
+        emoji: "💀",
+        desc: "Villages +60% HP, defenses +25% — but 2.2× gold and +12% drop chance.",
+        hp: 1.6, dps: 1.25, gold: 2.2, xp: 1.5, dropBonus: 0.12,
+        flavor: "The dead guard the richest shores.",
+      },
+    ],
+    ROUTE_BY_ID: {},
+
     REGIONS: [
       { name: "The Frozen Shore",   art: "scene_frozen_shore", tint: "#1b2a3a", weather: "snow" },
       { name: "Whispering Fjords",  art: "scene_fjords",       tint: "#243440", weather: "mist" },
@@ -303,6 +336,8 @@
       { id: "combo_50",   name: "Fury Unleashed",       icon: "⚡", desc: "Reach a 50-hit combo.",           check: (s) => (s.totals.maxCombo || 0) >= 50, reward: { runes: 12 } },
       { id: "warband_10", name: "Growing Warband",      icon: "🪓", desc: "Hire 10 specialists.",            check: (s) => { const u = s.units || {}; return ((u.berserker||0)+(u.archer||0)+(u.shieldmaiden||0)) >= 10; }, reward: { runes: 10 } },
       { id: "warband_100",name: "Legion of the North",  icon: "⚜️", desc: "Hire 100 specialists.",           check: (s) => { const u = s.units || {}; return ((u.berserker||0)+(u.archer||0)+(u.shieldmaiden||0)) >= 100; }, reward: { shards: 5 } },
+      { id: "storm_5",    name: "Storm Chaser",         icon: "🌊", desc: "Brave the Storm Strait 5 times.", check: (s) => ((s.routeStats && s.routeStats.storm) || 0) >= 5, reward: { runes: 12 } },
+      { id: "cursed_5",   name: "Grave Robber",         icon: "🧭", desc: "Dare the Cursed Channel 5 times.", check: (s) => ((s.routeStats && s.routeStats.cursed) || 0) >= 5, reward: { shards: 4 } },
     ],
 
     // --- Village modifiers (per-fight affixes; hp/dps/gold/xp are multipliers) ---
@@ -409,6 +444,7 @@
   DATA.SLOTS.forEach((s) => (DATA.SLOT_BY_ID[s.id] = s));
   DATA.MODIFIERS.forEach((m) => (DATA.MODIFIER_BY_ID[m.id] = m));
   DATA.UNITS.forEach((u) => (DATA.UNIT_BY_ID[u.id] = u));
+  DATA.ROUTES.forEach((r) => (DATA.ROUTE_BY_ID[r.id] = r));
 
   global.DATA = DATA;
 })(typeof window !== "undefined" ? window : this);

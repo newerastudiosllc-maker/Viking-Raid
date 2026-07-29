@@ -201,7 +201,7 @@ async function main() {
   await loadIm("scene_bosslair", "scene_bosslair.png");
   await loadIm("hero", "hero_chieftain.png");
   await loadIm("logo", "logo.png");
-  for (const n of ["ab_berserk","ab_shield","ab_horn","ab_valkyrie","ab_ragnarok","tab_raid","tab_forge","tab_hero","tab_loot","tab_saga","unit_berserker","unit_archer","unit_shieldmaiden"]) {
+  for (const n of ["ab_berserk","ab_shield","ab_horn","ab_valkyrie","ab_ragnarok","tab_raid","tab_forge","tab_hero","tab_loot","tab_saga","unit_berserker","unit_archer","unit_shieldmaiden","route_calm","route_storm","route_cursed"]) {
     IMG[n] = await loadImage(path.resolve(__dirname, "..", "assets", "icons", n + ".png"));
   }
   const time = 1.2;
@@ -299,6 +299,37 @@ async function main() {
       c.strokeStyle="#8a6620"; c.lineWidth=3; c.beginPath(); c.arc(bx+44, ry+95, 17, 0, Math.PI*2); c.stroke();
       c.textAlign="left"; c.fillStyle="#ffd870"; c.font="bold 30px sans-serif"; c.textBaseline="middle"; c.fillText(r[4], bx+74, ry+95); c.textBaseline="alphabetic";
       ry += 220;
+    });
+    drawChrome(c, st, v);
+  });
+
+  await shot("08_routes", function (c) {
+    const st = makeState({ region: 4, villageIndex: 0, gold: 61000000, level: 41, rage: 0.3 });
+    Sys.init(st); const v = G.village; v.hp = v.maxHp;
+    buildWeather(st.region); drawBackground(c, st.region); drawWeather(c, st.region);
+    // dark veil + modal
+    c.fillStyle = "rgba(3,5,9,0.62)"; c.fillRect(0, 0, W, H);
+    const py = H*0.215, ph = H*0.50;
+    c.fillStyle = "rgba(10,13,21,0.97)"; roundRect(c, 60, py, W-120, ph, 36); c.fill();
+    c.strokeStyle = "#caa24a"; c.lineWidth = 3; roundRect(c, 60, py, W-120, ph, 36); c.stroke();
+    c.textAlign="left"; c.fillStyle="#ffd870"; c.font="bold 54px serif"; c.fillText("Chart Your Course", 110, py+95);
+    c.fillStyle="#9a9484"; c.font="30px sans-serif"; c.fillText("A new region lies ahead. Choose your passage —", 110, py+150);
+    c.fillText("it shapes every raid in this land.", 110, py+192);
+    const rows = [
+      ["route_calm","Calm Passage","Safe waters. A steady raid.","The sea is kind today.","#3a4356"],
+      ["route_storm","Storm Strait","+40% enemy attack — +65% gold, +30% XP","Fortune favors those who dare the gale.","#4a7ab0"],
+      ["route_cursed","Cursed Channel","+60% HP, +25% attack — 2.2x gold & drops","The dead guard the richest shores.","#6a4a9a"],
+    ];
+    let ry = py + 250;
+    rows.forEach((r)=>{
+      c.fillStyle="rgba(255,255,255,0.05)"; roundRect(c, 100, ry, W-200, 230, 24); c.fill();
+      c.strokeStyle=r[4]; c.lineWidth=3; roundRect(c, 100, ry, W-200, 230, 24); c.stroke();
+      const im = IMG[r[0]]; const isz = 150;
+      if (im) { c.save(); c.beginPath(); c.arc(140+isz/2, ry+115, isz/2, 0, Math.PI*2); c.clip(); c.drawImage(im, 140, ry+115-isz/2, isz, isz); c.restore(); }
+      c.textAlign="left"; c.fillStyle="#ece7d8"; c.font="bold 42px serif"; c.fillText(r[1], 330, ry+80);
+      c.fillStyle="#b9b3a4"; c.font="26px sans-serif"; c.fillText(r[2], 330, ry+130);
+      c.fillStyle="#caa24a"; c.font="italic 26px serif"; c.fillText(r[3], 330, ry+180);
+      ry += 260;
     });
     drawChrome(c, st, v);
   });

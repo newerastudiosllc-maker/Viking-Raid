@@ -42,6 +42,7 @@
       achList: $("achList"), achCount: $("achCount"), achClose: $("achClose"),
       dailyBtn: $("dailyBtn"), modalDaily: $("modalDaily"),
       dailyList: $("dailyList"), dailyStreak: $("dailyStreak"), dailyClose: $("dailyClose"),
+      modalRoute: $("modalRoute"), routeList: $("routeList"),
       onboarding: $("onboarding"), obIcon: $("obIcon"), obTitle: $("obTitle"),
       obText: $("obText"), obNext: $("obNext"), obSkip: $("obSkip"), obDots: $("obDots"),
       unspent: $("unspentPts"), statList: $("statList"),
@@ -718,10 +719,12 @@
     el.xpFill.style.width = Math.min(100, (s.xp / need) * 100) + "%";
     el.xpText.textContent = fmt(s.xp) + " / " + fmt(need) + " XP";
     const regName = DATA.regionName(s.region);
+    const rt = Sys.currentRoute ? Sys.currentRoute() : null;
     el.regionBadge.innerHTML = '<span class="rb-name">' + regName + "</span>" +
       '<span class="rb-sub">Village ' + (s.villageIndex + 1) + "/" + CONFIG.VILLAGES_PER_REGION +
       (v && v.isBoss ? " · BOSS" : "") +
       (v && v.mod && v.mod.id !== "none" ? " · " + v.mod.icon + " " + v.mod.name : "") +
+      (rt && rt.id !== "calm" ? " · " + rt.emoji + " " + rt.name : "") +
       "</span>";
     el.tapVal.textContent = "⚔ " + fmt(d.tapDmg);
     el.crewVal.textContent = "🪓 " + fmt(d.crewDps) + "/s";
@@ -763,6 +766,32 @@
   };
 
   // --- Toast & modals ----------------------------------------------
+  // --- Expedition route choice -------------------------------------
+  UI.showRouteChoice = function () {
+    if (!el.modalRoute) return;
+    let html = "";
+    DATA.ROUTES.forEach(function (r) {
+      html +=
+        '<button class="route-card" data-route="' + r.id + '">' +
+          '<img class="route-img" src="' + r.icon + '" alt="" onerror="this.style.display=\'none\'" />' +
+          '<span class="route-body">' +
+            '<span class="route-name">' + r.emoji + " " + r.name + '</span>' +
+            '<span class="route-desc">' + r.desc + '</span>' +
+            '<span class="route-flavor">' + r.flavor + '</span>' +
+          '</span>' +
+        '</button>';
+    });
+    el.routeList.innerHTML = html;
+    el.routeList.querySelectorAll(".route-card").forEach(function (b) {
+      b.addEventListener("click", function () {
+        Sys.chooseRoute(b.dataset.route);
+        UI.closeModal("modalRoute");
+        SFX.ability && SFX.ability();
+      });
+    });
+    UI.openModal("modalRoute");
+  };
+
   UI.toast = function (msg, ms) {
     el.toast.textContent = msg;
     el.toast.classList.add("show");

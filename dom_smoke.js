@@ -262,6 +262,25 @@ check("locked unit shows unlock level", () => {
   if (bc.textContent.indexOf("Lv") < 0) throw new Error("no unlock label");
 });
 
+check("route choice modal renders 3 cards", () => {
+  window.UI.showRouteChoice();
+  const cards = doc.querySelectorAll("#routeList .route-card");
+  if (cards.length !== 3) throw new Error("expected 3 route cards, got " + cards.length);
+  if (!doc.getElementById("modalRoute").classList.contains("show")) throw new Error("modal not shown");
+});
+
+check("clicking a route card selects it and closes modal", () => {
+  const card = doc.querySelector('#routeList .route-card[data-route="storm"]');
+  card.dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (G().state.route !== "storm") throw new Error("route not set: " + G().state.route);
+  if (doc.getElementById("modalRoute").classList.contains("show")) throw new Error("modal still open");
+});
+
+check("route badge shows in HUD", () => {
+  window.UI.update();
+  if (doc.getElementById("regionBadge").textContent.indexOf("Storm Strait") < 0) throw new Error("route not in badge");
+});
+
 driveFrames(10);
 
 console.log("\n== CHECKS ==");

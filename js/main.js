@@ -113,6 +113,10 @@
       const def = DATA.UNIT_BY_ID[e.id];
       if (def) UI.toast("⚜️ Hired " + e.count + " " + def.name + "!");
     });
+    G.on("routeChoice", function () { UI.showRouteChoice(); });
+    G.on("route", function (rt) {
+      if (rt.id !== "calm") UI.toast(rt.emoji + " " + rt.name + " — " + rt.flavor);
+    });
     G.on("sagaUpgrade", function () { UI.refreshSaga(); });
     G.on("abilityEnd", function () {});
     G.on("prestige", function () {});

@@ -51,6 +51,7 @@ Every equipment bonus feeds directly back into the derived-stat formulas, so the
 - **Ragnarök ultimate** — a **Rage meter** charges from tapping and clearing villages. When full, unleash a screen-shaking burst of damage **plus an 8-second 2× power buff**. A dedicated glowing button with a live charge readout.
 - **Boss Fury / Stagger** — below 35% HP a boss **staggers** (a burst window where it takes double damage), then **enrages** — its defenses hit far harder, so time your **Shield Wall**. Reactive boss fights, not just bigger HP pools.
 - **Warband Specialists** — hire elite crew units with gold (Forge tab): **Berserkers** (+2% Crew DPS each, Lv 6), **Archers** (+2% Tap damage & +0.05% Crit each, Lv 10), and **Shieldmaidens** (−0.8% ship damage taken & +0.04% regen each, capped at −60%, Lv 14). Painted portrait cards with x1/x10/MAX hiring; counts reset on prestige for a fresh build each Saga.
+- **Expedition Routes** — entering each new region (from region 2 on), chart your course: **Calm Passage** (safe), **Storm Strait** (+40% enemy attack, but +65% gold / +30% XP / +6% drops), or **Cursed Channel** (+60% village HP & +25% attack, but 2.2× gold / +50% XP / +12% drops). The route shapes every raid in that region, shows in the HUD, resets to Calm on prestige, and feeds two achievements (Storm Chaser, Grave Robber).
 
 ---
 
@@ -96,8 +97,8 @@ python3 -m http.server 8080
 ```bash
 npm install            # pulls jsdom for the DOM test
 npm test               # runs both suites
-#   • test_logic.js  — 85 core-simulation assertions (combat, leveling, upgrades, loot, runes, daily quests, combo, achievements, modifiers, Ragnarök, boss mechanics, warband units, prestige, offline, save)
-#   • dom_smoke.js   — 33 full-runtime checks in a real DOM (jsdom) with mocked canvas/audio
+#   • test_logic.js  — 100 core-simulation assertions (combat, leveling, upgrades, loot, runes, daily quests, combo, achievements, modifiers, Ragnarök, boss mechanics, warband units, expedition routes, prestige, offline, save)
+#   • dom_smoke.js   — 36 full-runtime checks in a real DOM (jsdom) with mocked canvas/audio
 ```
 
 ---

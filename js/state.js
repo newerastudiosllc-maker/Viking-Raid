@@ -48,6 +48,8 @@
       stats: { str: 0, led: 0, vit: 0, fot: 0 },
       upgrades: freshUpgrades(),
       units: { berserker: 0, archer: 0, shieldmaiden: 0 },
+      route: "calm",        // active expedition route for the current region
+      routeStats: { storm: 0, cursed: 0 }, // lifetime risky-route picks
       saga: {
         shards: 0,
         totalEarned: 0,
@@ -93,6 +95,8 @@
     out.stats = Object.assign({}, d.stats, s.stats || {});
     out.upgrades = Object.assign(freshUpgrades(), s.upgrades || {});
     out.units = Object.assign({ berserker: 0, archer: 0, shieldmaiden: 0 }, s.units || {});
+    if (typeof out.route !== "string" || !out.route) out.route = "calm";
+    out.routeStats = Object.assign({ storm: 0, cursed: 0 }, s.routeStats || {});
     out.saga = Object.assign({}, d.saga, s.saga || {});
     out.saga.upgrades = Object.assign(freshSagaUpgrades(), (s.saga && s.saga.upgrades) || {});
     out.abilities = Object.assign(freshAbilities(), s.abilities || {});

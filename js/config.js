@@ -187,6 +187,9 @@
     CREW_SHIELD_REDUCE_CAP: 0.6,      // …capped at -60%
     CREW_SHIELD_REGEN: 0.0004,        // +0.04% ship regen per Shieldmaiden
 
+    // --- Expedition routes (chosen at each new region) ----------------
+    ROUTE_UNLOCK_REGION: 1,           // choice appears entering region 2+
+
     // --- Boss fury / stagger -----------------------------------------
     BOSS_FURY_HP_FRAC: 0.35,
     BOSS_STAGGER_S: 4,

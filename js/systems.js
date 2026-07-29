@@ -101,6 +101,8 @@
     const s = G.state;
     let chance = isBoss ? CONFIG.LOOT_BOSS_DROP_CHANCE : CONFIG.LOOT_DROP_CHANCE;
     chance += s.stats.fot * 0.004; // Fortune = magic find
+    const rt = DATA.ROUTE_BY_ID[s.route || "calm"];
+    if (rt) chance += rt.dropBonus || 0;
     if (Math.random() > chance) return null;
     return Sys.genItem(region, { rarityBonus: isBoss ? CONFIG.LOOT_BOSS_RARITY_BONUS : 0 });
   };
@@ -378,6 +380,9 @@
     else name = DATA.villageName(rng) + " " + type.word;
 
     const maxHp = F.villageHp(region, index) * type.hp * mod.hp;
+    // active expedition route scales the whole region (risk-reward)
+    const rt = DATA.ROUTE_BY_ID[(G.state && G.state.route) || "calm"] || DATA.ROUTES[0];
+    const rHp = maxHp * rt.hp;
     return {
       region: region,
       index: index,
@@ -385,11 +390,12 @@
       isBoss: isBoss,
       type: type,
       mod: mod,
-      maxHp: maxHp,
-      hp: maxHp,
-      gold: F.villageGold(region, index) * type.gold * mod.gold,
-      xp: F.villageXp(region, index) * mod.xp,
-      dps: F.villageDps(region, index) * mod.dps,
+      route: rt.id,
+      maxHp: rHp,
+      hp: rHp,
+      gold: F.villageGold(region, index) * type.gold * mod.gold * rt.gold,
+      xp: F.villageXp(region, index) * mod.xp * rt.xp,
+      dps: F.villageDps(region, index) * mod.dps * rt.dps,
       stagger: 0,
       staggered: false,
       fury: false,
@@ -653,9 +659,34 @@
       s.highestRegion = reg;
       G.emit("newRegion", reg);
     }
+    // entering a new region: offer an expedition route choice
+    if (idx === 0 && reg >= CONFIG.ROUTE_UNLOCK_REGION) {
+      G.emit("routeChoice", reg);
+    }
 
     Sys.checkLevel();
     Sys.setVillage(reg, idx);
+  };
+
+  // --- Expedition routes -------------------------------------------
+  Sys.chooseRoute = function (id) {
+    const rt = DATA.ROUTE_BY_ID[id];
+    if (!rt) return false;
+    const s = G.state;
+    s.route = id;
+    if (id !== "calm") {
+      if (!s.routeStats) s.routeStats = { storm: 0, cursed: 0 };
+      s.routeStats[id] = (s.routeStats[id] || 0) + 1;
+    }
+    // re-generate the current village under the new route
+    Sys.setVillage(s.region, s.villageIndex);
+    G.dirty = true;
+    G.emit("route", rt);
+    return true;
+  };
+
+  Sys.currentRoute = function () {
+    return DATA.ROUTE_BY_ID[G.state.route || "calm"] || DATA.ROUTES[0];
   };
 
   // --- Retreat (longship overwhelmed) ------------------------------
@@ -852,6 +883,7 @@
     s.upgrades = {};
     DATA.UPGRADES.forEach((u) => (s.upgrades[u.id] = 0));
     s.units = { berserker: 0, archer: 0, shieldmaiden: 0 };
+    s.route = "calm";
     s.region = 0;
     s.villageIndex = 0;
     s.highestRegion = 0;

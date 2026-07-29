@@ -261,6 +261,57 @@ function der() { Sys.recompute(); return G.derived; }
   })());
 })();
 
+console.log("\n== Expedition routes ==");
+(function () {
+  const s = State.defaults();
+  Sys.init(s);
+  ok("routes defined", DATA.ROUTES.length === 3 && !!DATA.ROUTE_BY_ID.storm);
+  ok("default route is calm", Sys.currentRoute().id === "calm");
+  const base = Sys.genVillage(2, 3);
+  ok("choose storm route", Sys.chooseRoute("storm") === true);
+  const stormy = Sys.genVillage(2, 3);
+  ok("storm boosts village gold", stormy.gold > base.gold * 1.5);
+  ok("storm boosts village dps", stormy.dps > base.dps * 1.3);
+  ok("storm hp unchanged", Math.abs(stormy.maxHp - base.maxHp) < 0.01);
+  ok("route pick tracked", s.routeStats.storm === 1);
+  Sys.chooseRoute("cursed");
+  const cursed = Sys.genVillage(2, 3);
+  ok("cursed boosts hp", cursed.maxHp > base.maxHp * 1.5);
+  ok("cursed gold >2x", cursed.gold > base.gold * 2.1);
+  ok("invalid route rejected", Sys.chooseRoute("krakenlane") === false);
+  ok("current village regenerated on route change", G.village.route === "cursed");
+  ok("route survives save round-trip", (function () {
+    const code = State.exportCode(s);
+    const imp = State.importCode(code);
+    return imp && imp.route === "cursed" && imp.routeStats.cursed === 1;
+  })());
+  ok("old saves heal to calm route", (function () {
+    const old = State.defaults(); delete old.route; delete old.routeStats;
+    const code = State.exportCode(old);
+    const imp = State.importCode(code);
+    return imp && imp.route === "calm" && imp.routeStats.storm === 0;
+  })());
+  ok("routeChoice fires entering new region", (function () {
+    let fired = false;
+    const s2 = State.defaults();
+    s2.region = 1; s2.villageIndex = CONFIG.VILLAGES_PER_REGION - 1;
+    Sys.init(s2);
+    const off = G.on("routeChoice", function () { fired = true; });
+    G.village.hp = 0;
+    Sys.clearVillage();
+    if (off && off.call) off();
+    return fired && s2.region === 2 && s2.villageIndex === 0;
+  })());
+  ok("prestige resets route to calm", (function () {
+    const s3 = State.defaults();
+    s3.route = "cursed"; s3.highestRegion = 99;
+    Sys.init(s3);
+    if (!Sys.canPrestige()) return true;
+    Sys.doPrestige();
+    return s3.route === "calm";
+  })());
+})();
+
 console.log("\n== Save / load ==");
 State.save(st);
 const ld = State.load();
