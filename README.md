@@ -23,6 +23,16 @@ ever-greater power. The world scales endlessly — there is always a harder shor
 
 ---
 
+## 🧩 Progression depth (the advanced systems)
+
+- **🎒 Loot & rarity** — Villages and Boss Lairs drop equippable gear across **6 rarity tiers** (Common → Mythic), each with 1–4 rolled affixes (tap dmg, crew dmg, ship HP, crit, crit dmg, gold, regen, flat power). Fortune acts as **Magic Find**, shifting drops toward higher rarities. Four slots: Weapon, Helm, Armor, Relic.
+- **🔮 Rune-crafting / Enchanting** — Salvage unwanted items into **Runes** (also dropped by bosses), then spend Runes + gold to **Enchant** any item, raising its level and scaling every affix. A second resource economy layered on top of gold.
+- **📜 Daily Saga Quests** — Three rotating daily objectives (raid, defeat bosses, strike, plunder, forge, enchant) with progress tracking, a **streak** system, and rewards in runes, gold, and Saga shards. Resets at UTC midnight. A 📜 button in the HUD shows a badge when a quest is claimable.
+
+Every equipment bonus feeds directly back into the derived-stat formulas, so the gear you find and forge changes your real combat numbers.
+
+---
+
 ## 🎮 How to play
 
 - **Tap the raid target** to strike it (your Tap Damage). Your **Warband** auto-attacks for continuous DPS.
@@ -148,13 +158,18 @@ save always faces the same sequence — fair and reproducible.
 
 ---
 
-## 🗺️ Roadmap ideas
+## 🗺️ Roadmap
 
-- Equipable loot & rarity (weapons/armor with affixes)
-- A second resource (runes) and a rune-crafting tree
-- Daily saga quests & event regions
-- Leaderboards / async "raiding rivals"
-- iCloud/Play cloud save sync
+**Shipped in v1.0:**
+- ✅ Equippable loot & 6 rarity tiers with rolled affixes
+- ✅ Runes + Enchanting (second resource economy)
+- ✅ Daily Saga Quests with streaks
+
+**Planned next:**
+- Cloud save sync (Firebase or Play Games Saved Games) — see `LAUNCH_CHECKLIST.md`
+- Leaderboards / async "raiding rivals" (Play Games Services)
+- Set bonuses (equipping multiple items from a "set")
+- Event regions & limited-time bosses
 - Localized strings (i18n)
 
 ---

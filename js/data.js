@@ -199,6 +199,54 @@
       "Frostmaw", "Seawolf", "Bonecrusher", "Grimtooth", "Shieldbreaker",
     ],
 
+    // --- Equipment rarities (index === tier) -------------------------
+    RARITY: [
+      { id: 0, name: "Common",    color: "#9aa0a6", affixes: 1, mult: 0.90, sell: 1,   weight: 1000 },
+      { id: 1, name: "Uncommon",  color: "#5fd17a", affixes: 2, mult: 1.15, sell: 3,   weight: 520 },
+      { id: 2, name: "Rare",      color: "#56b4e6", affixes: 2, mult: 1.50, sell: 9,   weight: 230 },
+      { id: 3, name: "Epic",      color: "#b06ce0", affixes: 3, mult: 2.00, sell: 24,  weight: 85 },
+      { id: 4, name: "Legendary", color: "#e8a23a", affixes: 3, mult: 2.80, sell: 60,  weight: 24 },
+      { id: 5, name: "Mythic",    color: "#ff5a3c", affixes: 4, mult: 3.90, sell: 160, weight: 5 },
+    ],
+
+    // --- Affixes (rollable bonuses on items) -------------------------
+    AFFIXES: [
+      { id: "tapPct",  name: "Tap Damage",       icon: "⚔️", min: 0.04, max: 0.09, fmt: "pct" },
+      { id: "crewPct", name: "Crew Damage",      icon: "🪓", min: 0.05, max: 0.11, fmt: "pct" },
+      { id: "hpPct",   name: "Longship HP",      icon: "🛡️", min: 0.05, max: 0.12, fmt: "pct" },
+      { id: "crit",    name: "Crit Chance",      icon: "🎯", min: 0.008, max: 0.025, fmt: "pct" },
+      { id: "critDmg", name: "Crit Damage",      icon: "💥", min: 0.10, max: 0.28, fmt: "pct" },
+      { id: "gold",    name: "Gold Find",        icon: "🍀", min: 0.05, max: 0.12, fmt: "pct" },
+      { id: "regen",   name: "Durability Regen", icon: "✚",  min: 0.003, max: 0.008, fmt: "pct" },
+      { id: "tapFlat", name: "Flat Tap Power",   icon: "✊",  min: 3, max: 10, fmt: "flat" },
+    ],
+    AFFIX_BY_ID: {}, // filled at runtime below
+
+    // --- Equipment slots ---------------------------------------------
+    SLOTS: [
+      { id: "weapon", name: "Weapon", icon: "🗡️" },
+      { id: "helm",   name: "Helm",   icon: "⛑️" },
+      { id: "armor",  name: "Armor",  icon: "🛡️" },
+      { id: "relic",  name: "Relic",  icon: "💠" },
+    ],
+    SLOT_BY_ID: {},
+
+    // Loot name generation
+    ITEM_ADJ: ["Ancient", "Frostbound", "Ravensworn", "Iron", "Bloodforged", "Storm", "Wyrm", "Sacred", "Cursed", "Golden", "Shadow", "Wolf", "Bear", "Oak", "Runic", "Sundered"],
+    ITEM_SUFFIX: ["the North", "Slumber", "Giants", "the Deep", "Valor", "the Gods", "Thunder", "Winter", "the Hunt", "Endless Fury", "the Forge", "the Void"],
+
+    // --- Daily quest templates ---------------------------------------
+    // goal: fixed, or 0 => computed dynamically from player economy
+    DAILY_POOL: [
+      { id: "raid",     track: "raids",     verb: "Raid",        noun: "villages",   goal: 15,  reward: { runes: 3 } },
+      { id: "boss",     track: "bosses",    verb: "Defeat",      noun: "Boss Lairs", goal: 1,   reward: { runes: 6, shards: 1 } },
+      { id: "tap",      track: "taps",      verb: "Strike",      noun: "times",      goal: 150, reward: { runes: 3 } },
+      { id: "gold",     track: "gold",      verb: "Plunder",     noun: "gold",       goal: 0,   reward: { runes: 4 } },
+      { id: "upgrade",  track: "upgrades",  verb: "Forge",       noun: "upgrades",   goal: 6,   reward: { runes: 4 } },
+      { id: "enchant",  track: "enchants",  verb: "Enchant",     noun: "items",      goal: 1,   reward: { runes: 7, shards: 1 } },
+    ],
+
+
     // Deterministic-ish RNG helpers (seedable for stable village names per save)
     rng(seed) {
       // mulberry32
@@ -237,10 +285,31 @@
       if (index < DATA.REGIONS.length) return DATA.REGIONS[index];
       // cycle art, darkening tints for deeper regions
       const base = DATA.REGIONS[index % DATA.REGIONS.length];
-      const depth = Math.floor((index - DATA.REGIONS.length) / DATA.REGIONS.length);
       return { name: DATA.regionName(index), art: base.art, tint: base.tint };
     },
+
+    // Compose a flavourful item name from its slot + rarity.
+    itemName(slotId, rarity, rngFn) {
+      const slot = DATA.SLOT_BY_ID[slotId] || { name: "Item" };
+      const adj = DATA.ITEM_ADJ[Math.floor(rngFn() * DATA.ITEM_ADJ.length)];
+      if (rarity >= 4) {
+        const suf = DATA.ITEM_SUFFIX[Math.floor(rngFn() * DATA.ITEM_SUFFIX.length)];
+        return adj + " " + slot.name + " of " + suf;
+      }
+      return adj + " " + slot.name;
+    },
+
+    // Affix display value at a given item level
+    affixValue(affix, level) {
+      const scale = 1 + CONFIG.LOOT_AFFIX_LEVEL_SCALE * (level - 1);
+      let v = (affix.base * DATA.RARITY[affix.rarity].mult) * scale;
+      return v;
+    },
   };
+
+  // build lookup maps
+  DATA.AFFIXES.forEach((a) => (DATA.AFFIX_BY_ID[a.id] = a));
+  DATA.SLOTS.forEach((s) => (DATA.SLOT_BY_ID[s.id] = s));
 
   global.DATA = DATA;
 })(typeof window !== "undefined" ? window : this);

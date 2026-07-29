@@ -9,6 +9,7 @@
 
   let canvas, lastFrame, acc = 0;
   let hiddenAt = 0;
+  let frameCount = 0;
 
   function boot() {
     canvas = document.getElementById("stage");
@@ -82,6 +83,18 @@
     G.on("newRegion", function (reg) {
       UI.toast("🗺️ New region: " + DATA.regionName(reg));
     });
+    G.on("drop", function (it) {
+      const R = DATA.RARITY[it.rarity];
+      if (it.rarity >= 3) { SFX.boss(); UI.toast("✨ " + R.name + " loot — " + it.name + "!", 2600); }
+      else UI.toast(R.name + " loot — " + it.name, 1400);
+    });
+    G.on("newDay", function () {
+      SFX.level();
+      UI.toast("📜 New daily Saga quests available!", 2800);
+    });
+    G.on("dailyClaim", function () { SFX.level(); });
+    G.on("loot", function () { UI.refreshLoot && UI.refreshLoot(); });
+    G.on("enchant", function () { SFX.upgrade(); });
     G.on("stat", function () { UI.refreshHero(); });
     G.on("upgrade", function () { UI.refreshForge(); });
     G.on("sagaUpgrade", function () { UI.refreshSaga(); });
@@ -105,6 +118,8 @@
       if (acc > step * 6) acc = 0;
       Render.frame(dtMs);
     }
+    frameCount++;
+    if (frameCount % 120 === 0) Sys.dailyRollover(); // detect midnight while playing
     UI.update();
     requestAnimationFrame(loop);
   }

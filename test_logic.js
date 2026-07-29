@@ -102,6 +102,61 @@ const rep = Sys.applyOffline(2 * 3600 * 1000);
 ok("offline report produced", !!rep && rep.gold >= 0);
 ok("offline gives gold", rep.gold > 0);
 
+console.log("\n== Loot & equipment ==");
+const S = G.state; // operate on the live state (earlier sections may have re-init'd)
+ok("fresh loot state exists", !!S.loot && S.loot.runes === 0 && Array.isArray(S.loot.inventory));
+ok("equipped has 4 slots", Object.keys(S.loot.equipped).length === 4);
+const item = Sys.genItem(0, {});
+ok("item generated with affixes", !!item && item.affixes.length >= 1 && !!item.name);
+ok("rarity within range", item.rarity >= 0 && item.rarity < DATA.RARITY.length);
+const inv0 = S.loot.inventory.length;
+Sys._addItem(item);
+ok("item added to inventory", S.loot.inventory.length === inv0 + 1);
+Sys.equipItem(item.uid);
+ok("item equipped into its slot", S.loot.equipped[item.slot] && S.loot.equipped[item.slot].uid === item.uid);
+const tapBeforeEq = G.derived.tapDmg;
+Sys.unequip(item.slot);
+Sys.recompute();
+ok("unequip removes item", S.loot.equipped[item.slot] === null);
+// craft a strong tap item to verify equipment changes derived stats
+const strong = Sys.genItem(0, {});
+strong.affixes = [{ stat: "tapPct", base: 0.5, rarity: 5 }];
+strong.slot = "weapon";
+Sys._addItem(strong);
+Sys.equipItem(strong.uid);
+Sys.recompute();
+ok("equipped tap item boosts tap dmg", G.derived.tapDmg > tapBeforeEq * 2);
+const eCost = Sys.enchantCost(strong);
+S.loot.runes = eCost.runes + 100; S.gold = eCost.gold + 100;
+const lvlBefore = strong.level;
+ok("enchant levels up item", Sys.enchantItem(strong.uid) && strong.level === lvlBefore + 1);
+const toSell = Sys.genItem(0, {}); Sys._addItem(toSell);
+const goldBeforeSell = S.gold;
+ok("sell grants gold", !!Sys.sellItem(toSell.uid) && S.gold > goldBeforeSell);
+const toSalv = Sys.genItem(0, {}); Sys._addItem(toSalv);
+const runesBefore = S.loot.runes;
+ok("salvage grants runes", !!Sys.salvageItem(toSalv.uid) && S.loot.runes > runesBefore);
+
+console.log("\n== Daily quests ==");
+Sys.dailyRollover();
+ok("dailies generated", !!S.dailies && S.dailies.quests.length === CONFIG.DAILY_QUEST_COUNT);
+const q0 = S.dailies.quests[0];
+Sys.daily(q0.track, q0.goal + 5); // force-complete the first quest
+ok("daily progress tracked", q0.progress >= q0.goal);
+const idx0 = S.dailies.quests.indexOf(q0);
+const claimR = Sys.claimDaily(idx0);
+ok("daily claim grants rewards", !!claimR && (claimR.runes > 0 || claimR.gold > 0));
+ok("claimed quest flagged", q0.claimed === true);
+ok("cannot claim twice", Sys.claimDaily(idx0) === null);
+
+console.log("\n== Boss drops runes & loot ==");
+Sys.init(State.defaults());
+G.village = Sys.genVillage(0, CONFIG.BOSS_INDEX);
+const runesBeforeBoss = G.state.loot.runes;
+G.village.hp = 0.0001;
+Sys.tick(5);
+ok("boss kill granted runes", G.state.loot.runes > runesBeforeBoss);
+
 console.log("\n== Save / load ==");
 State.save(st);
 const ld = State.load();

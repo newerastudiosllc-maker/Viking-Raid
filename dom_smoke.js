@@ -137,6 +137,48 @@ check("settings toggle", () => {
 
 check("save round-trips", () => { window.State.save(G().state); const ld = window.State.load(); if (!ld || !ld.state) throw new Error("no load"); });
 
+check("loot tab renders equip slots", () => {
+  click('#tabs .tab[data-tab="loot"]');
+  if (doc.querySelectorAll("#equipSlots .eqslot").length !== 4) throw new Error("expected 4 slots");
+  if (!doc.querySelector("#invList")) throw new Error("no inventory");
+});
+check("equip an item updates derived", () => {
+  const it = window.Sys.genItem(0, {});
+  it.affixes = [{ stat: "tapPct", base: 0.5, rarity: 5 }];
+  it.slot = "weapon";
+  window.Sys._addItem(it);
+  const before = window.Sys.ensureDerived().tapDmg;
+  window.Sys.equipItem(it.uid);
+  window.Sys.recompute();
+  if (window.Sys.ensureDerived().tapDmg <= before) throw new Error("equip did not boost");
+});
+check("enchant via UI detail button", () => {
+  const it = window.Sys.genItem(0, {});
+  window.Sys._addItem(it);
+  G().state.loot.runes = 1e6; G().state.gold = 1e9;
+  window.UI.refreshLoot(); // sync DOM after Sys mutation
+  const node = doc.querySelector('.inv-item[data-uid="' + it.uid + '"]');
+  if (!node) throw new Error("item not rendered");
+  node.dispatchEvent(new window.Event("click", { bubbles: true })); // select
+  const before = it.level;
+  const btn = doc.querySelector('[data-act="enchant"]');
+  if (!btn) throw new Error("no enchant button");
+  btn.dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (it.level !== before + 1) throw new Error("enchant did not apply");
+});
+check("daily modal open + claim", () => {
+  window.Sys.dailyRollover();
+  const q0 = G().state.dailies.quests[0];
+  window.Sys.daily(q0.track, q0.goal + 5);
+  doc.getElementById("dailyBtn").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (!doc.getElementById("modalDaily").classList.contains("show")) throw new Error("modal not shown");
+  const claimBtn = doc.querySelector("#dailyList .dq-claim");
+  if (!claimBtn || claimBtn.classList.contains("disabled")) throw new Error("claim not ready");
+  claimBtn.dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (!q0.claimed) throw new Error("not claimed");
+  window.UI.closeModal("modalDaily");
+});
+
 driveFrames(10);
 
 console.log("\n== CHECKS ==");

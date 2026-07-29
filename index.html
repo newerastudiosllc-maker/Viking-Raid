@@ -41,6 +41,7 @@
       </div>
       <div class="hud-right">
         <div id="levelBadge" class="level-badge">LVL 1</div>
+        <button id="dailyBtn" class="icon-btn" aria-label="Daily quests">📜</button>
         <button id="menuBtn" class="icon-btn" aria-label="Menu">⚙</button>
       </div>
     </div>
@@ -81,6 +82,15 @@
       <h3 class="sub-head">Abilities</h3>
       <div id="abilityInfo" class="ab-info-list"></div>
     </div>
+    <!-- LOOT -->
+    <div id="panelLoot" class="panel-pane">
+      <div class="panel-head"><h2>🎒 Hoard</h2>
+        <span class="res-mini">🔮 <span id="lootRunes">0</span> runes</span></div>
+      <div id="equipSlots" class="equip-slots"></div>
+      <div id="itemDetail" class="item-detail"></div>
+      <h3 class="sub-head">Inventory (<span id="invCount">0</span>/<span id="invCap">40</span>)</h3>
+      <div id="invList" class="inv-list"></div>
+    </div>
     <!-- SAGA -->
     <div id="panelSaga" class="panel-pane">
       <div class="panel-head"><h2>🌀 Saga of Legends</h2></div>
@@ -103,11 +113,22 @@
     <button class="tab active" data-tab="raid">⚔<span>Raid</span></button>
     <button class="tab" data-tab="forge">🔨<span>Forge</span></button>
     <button class="tab" data-tab="hero">🧔<span>Hero</span></button>
+    <button class="tab" data-tab="loot">🎒<span>Loot</span></button>
     <button class="tab" data-tab="saga">🌀<span>Saga</span></button>
   </nav>
 
   <!-- ===================== TOAST ===================== -->
   <div id="toast" class="toast"></div>
+
+  <!-- ===================== DAILY MODAL ===================== -->
+  <div id="modalDaily" class="modal">
+    <div class="modal-card">
+      <h2>📜 Daily Saga Quests</h2>
+      <div class="daily-meta">🔥 Streak: <b id="dailyStreak">0</b> &nbsp;·&nbsp; Resets at UTC midnight</div>
+      <div id="dailyList"></div>
+      <button id="dailyClose" class="btn-primary">Close</button>
+    </div>
+  </div>
 
   <!-- ===================== MODALS ===================== -->
   <div id="modalSettings" class="modal">

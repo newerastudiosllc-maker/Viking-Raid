@@ -12,6 +12,7 @@
   let buyMode = 1; // 1 | 10 | "max"
   let toastTimer = null;
   let abilityEls = {};
+  let selectedUid = null;
 
   function $(id) { return document.getElementById(id); }
   function fmt(n) { return Render.formatNum(n); }
@@ -28,7 +29,13 @@
       panel: $("panel"),
       panelForge: $("panelForge"), panelHero: $("panelHero"),
       panelSaga: $("panelSaga"),
+      panelLoot: $("panelLoot"),
       forgeList: $("forgeList"), buyModeBtn: $("buyMode"),
+      equipSlots: $("equipSlots"), itemDetail: $("itemDetail"),
+      invList: $("invList"), invCount: $("invCount"), invCap: $("invCap"),
+      lootRunes: $("lootRunes"),
+      dailyBtn: $("dailyBtn"), modalDaily: $("modalDaily"),
+      dailyList: $("dailyList"), dailyStreak: $("dailyStreak"), dailyClose: $("dailyClose"),
       unspent: $("unspentPts"), statList: $("statList"),
       derivedStats: $("derivedStats"), abilityInfo: $("abilityInfo"),
       sagaGain: $("sagaGain"), sagaBtn: $("sagaPrestige"),
@@ -65,10 +72,16 @@
     // saga
     el.sagaBtn.addEventListener("click", function () { UI.openPrestige(); });
 
+    // daily quests
+    el.dailyBtn.addEventListener("click", function () { Sys.dailyRollover(); UI.refreshDailies(); UI.openModal("modalDaily"); });
+    el.dailyClose.addEventListener("click", function () { UI.closeModal("modalDaily"); });
+    el.invCap.textContent = CONFIG.LOOT_INV_CAP;
+
     buildForge();
     buildStats();
     buildSaga();
     buildAbilities();
+    buildEquipSlots();
 
     // settings buttons
     bindSetting("setSfx", "sfx");
@@ -118,6 +131,7 @@
     document.querySelectorAll(".panel-pane").forEach(function (p) { p.style.display = "none"; });
     if (name === "forge") { $("panelForge").style.display = "block"; UI.refreshForge(); }
     if (name === "hero") { $("panelHero").style.display = "block"; UI.refreshHero(); }
+    if (name === "loot") { $("panelLoot").style.display = "block"; UI.refreshLoot(); }
     if (name === "saga") { $("panelSaga").style.display = "block"; UI.refreshSaga(); }
   };
 
@@ -302,6 +316,178 @@
     return '<div class="ds"><span>' + icon + " " + name + '</span><b>' + val + "</b></div>";
   }
 
+  // ============================================================
+  //  LOOT / HOARD
+  // ============================================================
+  function rarityColor(r) { return DATA.RARITY[r].color; }
+  function rarityName(r) { return DATA.RARITY[r].name; }
+  function fmtAffix(a, level) {
+    const def = DATA.AFFIX_BY_ID[a.stat];
+    const v = DATA.affixValue(a, level);
+    const sign = v >= 0 ? "+" : "";
+    if (def.fmt === "pct") return def.icon + " " + def.name + ": " + sign + (v * 100).toFixed(1) + "%";
+    return def.icon + " " + def.name + ": " + sign + fmt(v);
+  }
+
+  function buildEquipSlots() {
+    let html = "";
+    DATA.SLOTS.forEach(function (sl) {
+      html +=
+        '<div class="eqslot" data-slot="' + sl.id + '">' +
+          '<div class="eqslot-icon">' + sl.icon + '</div>' +
+          '<div class="eqslot-item"></div>' +
+          '<div class="eqslot-name">' + sl.name + '</div>' +
+        '</div>';
+    });
+    el.equipSlots.innerHTML = html;
+    el.equipSlots.querySelectorAll(".eqslot").forEach(function (slotEl) {
+      slotEl.addEventListener("click", function () {
+        const cur = G.state.loot.equipped[slotEl.dataset.slot];
+        if (cur) { selectedUid = cur.uid; UI.refreshLoot(); }
+      });
+    });
+  }
+
+  UI.refreshLoot = function () {
+    const s = G.state;
+    if (!s || !el.equipSlots) return;
+    el.lootRunes.textContent = fmt(s.loot.runes);
+    el.invCap.textContent = CONFIG.LOOT_INV_CAP;
+    el.invCount.textContent = s.loot.inventory.length;
+
+    el.equipSlots.querySelectorAll(".eqslot").forEach(function (slotEl) {
+      const it = s.loot.equipped[slotEl.dataset.slot];
+      const itemDiv = slotEl.querySelector(".eqslot-item");
+      if (it) {
+        slotEl.classList.add("filled");
+        slotEl.classList.toggle("sel", it.uid === selectedUid);
+        slotEl.style.borderColor = rarityColor(it.rarity);
+        itemDiv.innerHTML = '<span class="eq-name" style="color:' + rarityColor(it.rarity) + '">' + it.name + '</span>' +
+          '<span class="eq-lv">+' + it.level + '</span>';
+      } else {
+        slotEl.classList.remove("filled", "sel");
+        slotEl.style.borderColor = "";
+        itemDiv.innerHTML = '<span class="eq-empty">empty</span>';
+      }
+    });
+
+    const inv = s.loot.inventory.slice().sort(function (a, b) { return Sys.itemPower(b) - Sys.itemPower(a); });
+    let html = "";
+    if (!inv.length) html = '<div class="empty-state">No items yet — raid villages and defeat Boss Lairs to find loot!</div>';
+    inv.forEach(function (it) {
+      const sel = it.uid === selectedUid ? " selected" : "";
+      html +=
+        '<div class="inv-item r' + it.rarity + sel + '" data-uid="' + it.uid + '">' +
+          '<div class="inv-bar" style="background:' + rarityColor(it.rarity) + '"></div>' +
+          '<div class="inv-body">' +
+            '<div class="inv-name" style="color:' + rarityColor(it.rarity) + '">' + it.name + '</div>' +
+            '<div class="inv-sub">' + DATA.SLOT_BY_ID[it.slot].name + " · " + rarityName(it.rarity) + " · +" + it.level + '</div>' +
+          '</div>' +
+        '</div>';
+    });
+    el.invList.innerHTML = html;
+    el.invList.querySelectorAll(".inv-item").forEach(function (node) {
+      node.addEventListener("click", function () {
+        selectedUid = parseInt(node.dataset.uid, 10);
+        UI.refreshLoot();
+      });
+    });
+    UI.refreshItemDetail();
+  };
+
+  UI.refreshItemDetail = function () {
+    if (selectedUid == null) {
+      el.itemDetail.innerHTML = '<div class="empty-state subtle">Tap an item to inspect, equip, sell, salvage, or enchant it.</div>';
+      return;
+    }
+    const s = G.state;
+    let it = null, equipped = false, slot = null;
+    const invItem = s.loot.inventory.find(function (i) { return i.uid === selectedUid; });
+    if (invItem) it = invItem;
+    else {
+      for (const sl in s.loot.equipped) {
+        if (s.loot.equipped[sl] && s.loot.equipped[sl].uid === selectedUid) { it = s.loot.equipped[sl]; equipped = true; slot = sl; break; }
+      }
+    }
+    if (!it) { selectedUid = null; el.itemDetail.innerHTML = ""; return; }
+    const R = DATA.RARITY[it.rarity];
+    let aff = "";
+    it.affixes.forEach(function (a) { aff += '<div class="detail-affix">' + fmtAffix(a, it.level) + '</div>'; });
+    const cost = Sys.enchantCost(it);
+    const maxed = it.level >= CONFIG.LOOT_ENCHANT_MAX_LEVEL;
+    const canEnchant = !maxed && s.loot.runes >= cost.runes && s.gold >= cost.gold;
+    let actions = "";
+    if (equipped) {
+      actions += '<button class="loot-act" data-act="unequip">Unequip</button>';
+    } else {
+      actions += '<button class="loot-act primary" data-act="equip">Equip</button>';
+      actions += '<button class="loot-act" data-act="sell">Sell · 🪙' + fmt(Sys.sellValue(it)) + '</button>';
+      actions += '<button class="loot-act" data-act="salvage">Salvage · 🔮' + Sys.salvageValue(it) + '</button>';
+    }
+    actions += '<button class="loot-act ' + (maxed ? "disabled" : (canEnchant ? "primary" : "")) + '" data-act="enchant">' +
+      (maxed ? "Max Level" : "Enchant +1 · 🔮" + cost.runes + " · 🪙" + fmt(cost.gold)) + '</button>';
+
+    el.itemDetail.innerHTML =
+      '<div class="detail-head" style="color:' + R.color + '">' + it.name + ' <span class="detail-lv">+' + it.level + '</span></div>' +
+      '<div class="detail-sub">' + DATA.SLOT_BY_ID[it.slot].name + " · " + R.name + (equipped ? ' · <i>Equipped</i>' : '') + '</div>' +
+      aff + '<div class="detail-actions">' + actions + '</div>';
+
+    el.itemDetail.querySelectorAll("[data-act]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        const act = b.dataset.act;
+        if (act === "equip") { Sys.equipItem(it.uid) ? SFX.upgrade() : SFX.error(); }
+        else if (act === "unequip") { Sys.unequip(slot) ? SFX.upgrade() : SFX.error(); }
+        else if (act === "sell") { const r = Sys.sellItem(it.uid); if (r) { SFX.upgrade(); UI.toast("Sold for 🪙" + fmt(r.gold)); selectedUid = null; } else SFX.error(); }
+        else if (act === "salvage") { const r = Sys.salvageItem(it.uid); if (r) { SFX.upgrade(); UI.toast("Salvaged for 🔮" + r.runes + " runes"); selectedUid = null; } else SFX.error(); }
+        else if (act === "enchant") { if (Sys.enchantItem(it.uid)) { SFX.upgrade(); UI.toast("Enchanted to +" + it.level + "!"); } else SFX.error(); }
+        UI.refreshLoot();
+      });
+    });
+  };
+
+  // ============================================================
+  //  DAILY QUESTS
+  // ============================================================
+  UI.refreshDailies = function () {
+    const s = G.state;
+    if (!s || !s.dailies) { Sys.dailyRollover(); }
+    const d = s.dailies;
+    if (!d) { el.dailyList.innerHTML = ""; return; }
+    el.dailyStreak.textContent = d.streak || 0;
+    let html = "";
+    d.quests.forEach(function (q, i) {
+      const prog = Math.min(q.goal, q.progress || 0);
+      const done = prog >= q.goal;
+      const claimable = done && !q.claimed;
+      const rewardTxt = (q.reward.runes ? "🔮" + q.reward.runes + "  " : "") + (q.reward.shards ? "💎" + q.reward.shards + "  " : "") + "+ 🪙 bonus";
+      html +=
+        '<div class="daily-q' + (q.claimed ? " claimed" : "") + '">' +
+          '<div class="dq-head"><b>' + q.verb + " " + q.goal + " " + q.noun + '</b><span class="dq-reward">' + rewardTxt + '</span></div>' +
+          '<div class="dq-bar"><div class="dq-fill" style="width:' + (prog / q.goal * 100) + '%"></div><span class="dq-text">' + prog + '/' + q.goal + '</span></div>' +
+          (q.claimed
+            ? '<button class="dq-claim done" disabled>✓ Claimed</button>'
+            : '<button class="dq-claim' + (claimable ? "" : " disabled") + '" data-dq="' + i + '">' + (claimable ? "Claim" : "In progress") + '</button>') +
+        '</div>';
+    });
+    el.dailyList.innerHTML = html;
+    el.dailyList.querySelectorAll("[data-dq]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        const idx = parseInt(b.dataset.dq, 10);
+        const r = Sys.claimDaily(idx);
+        if (r) { SFX.level(); UI.toast("Quest complete!  +🔮" + r.runes + (r.shards ? "  💎" + r.shards : "") + "  +🪙" + fmt(r.gold), 2200); }
+        else SFX.error();
+        UI.refreshDailies();
+      });
+    });
+  };
+
+  function updateDailyBadge() {
+    const s = G.state;
+    if (!s || !s.dailies || !el.dailyBtn) { if (el.dailyBtn) el.dailyBtn.classList.remove("badge"); return; }
+    const any = s.dailies.quests.some(function (q) { return !q.claimed && (q.progress || 0) >= q.goal; });
+    el.dailyBtn.classList.toggle("badge", any);
+  }
+
   UI.refreshSettings = function () {
     const s = G.state.settings;
     $("setSfx").classList.toggle("on", s.sfx);
@@ -350,6 +536,8 @@
     });
 
     if (tab === "forge") UI.refreshForge();
+    if (tab === "loot") UI.refreshLoot();
+    updateDailyBadge();
   };
 
   // --- Toast & modals ----------------------------------------------

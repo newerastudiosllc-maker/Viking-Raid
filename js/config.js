@@ -125,6 +125,28 @@
     SAGA_BONUS_PER_SHARD_TOTAL: 0.0, // handled per-upgrade below
     SAGA_UPGRADE_COST_GROWTH: 1.7,
 
+    // --- Loot & equipment --------------------------------------------
+    LOOT_DROP_CHANCE: 0.16,        // base drop chance per village cleared
+    LOOT_BOSS_DROP_CHANCE: 1.0,    // bosses always drop loot
+    LOOT_BOSS_RARITY_BONUS: 1,     // bosses roll +1 rarity tier minimum
+    LOOT_INV_CAP: 40,              // max items in inventory
+    LOOT_AFFIX_LEVEL_SCALE: 0.22,  // per-item-level bonus to affix values
+    LOOT_ENCHANT_BASE_RUNES: 2,
+    LOOT_ENCHANT_BASE_GOLD: 60,
+    LOOT_ENCHANT_GROWTH: 1.65,     // cost growth per enchant level
+    LOOT_ENCHANT_MAX_LEVEL: 25,
+    // probability of promoting from rarity tier i -> i+1 (before luck)
+    LOOT_PROMOTE: [0.52, 0.34, 0.16, 0.07, 0.025],
+
+    // --- Runes (enchant currency) ------------------------------------
+    RUNES_PER_BOSS_BASE: 3,
+    RUNES_PER_BOSS_REGION: 0.5,
+    RUNES_SALVAGE_BASE: 1,
+
+    // --- Daily Saga quests -------------------------------------------
+    DAILY_QUEST_COUNT: 3,
+    DAILY_RESET_UTC: true,         // roll over at UTC midnight (stable globally)
+
     // --- Misc / feel --------------------------------------------------
     FLOATER_LIFE_MS: 850,
     MAX_FLOATERS: 60,

@@ -27,6 +27,12 @@
     return o;
   }
 
+  function freshEquipped() {
+    const o = {};
+    DATA.SLOTS.forEach((s) => (o[s.id] = null));
+    return o;
+  }
+
   function defaults() {
     return {
       meta: {
@@ -59,6 +65,16 @@
         taps: 0,
         crits: 0,
       },
+      loot: {
+        inventory: [],
+        equipped: freshEquipped(),
+        runes: 0,
+        totalRunes: 0,
+        totalDrops: 0,
+        bestRarity: 0,
+        uid: 1,
+      },
+      dailies: null, // generated lazily by Sys.dailyRollover()
       settings: { sfx: true, haptics: true, reducedFx: false, notifsBoss: true },
       seenIntro: false,
     };
@@ -79,6 +95,14 @@
     });
     out.totals = Object.assign({}, d.totals, s.totals || {});
     out.settings = Object.assign({}, d.settings, s.settings || {});
+    // loot
+    out.loot = Object.assign({}, d.loot, s.loot || {});
+    out.loot.equipped = Object.assign(freshEquipped(), (s.loot && s.loot.equipped) || {});
+    out.loot.inventory = Array.isArray(out.loot.inventory) ? out.loot.inventory : [];
+    if (typeof out.loot.runes !== "number") out.loot.runes = 0;
+    if (typeof out.loot.uid !== "number") out.loot.uid = 1 + out.loot.inventory.length;
+    // dailies left as-is (validated/rolled by Sys); ensure object if present
+    out.dailies = s.dailies || null;
     if (typeof out.unspentStatPoints !== "number") out.unspentStatPoints = 0;
     return out;
   }
