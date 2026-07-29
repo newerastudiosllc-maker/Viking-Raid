@@ -24,7 +24,8 @@ Legend: ✅ already done in this repo · 🔲 your action · 💰 may cost money
 | Painted UI icon set (5 ability medallions + 5 tab glyphs, `assets/icons/`) | ✅ |
 | Warband Specialists system (3 hireable unit types w/ portraits) | ✅ |
 | Expedition Routes (risk-reward passage choice per region, 3 painted route icons) | ✅ |
-| Tests (`npm test` → 136 checks, 0 errors) | ✅ |
+| Saga Chart map (scouting fog, treasure caches, Jarl's Chest region reward) | ✅ |
+| Tests (`npm test` → 151 checks, 0 errors) | ✅ |
 
 ---
 
@@ -76,7 +77,7 @@ npx cap open android             # opens the project in Android Studio
 | # | Asset | Spec | Where to put it | How to make it |
 |---|---|---|---|---|
 | 4.1 | 🔲 App icon | 512×512 PNG, 32-bit, no alpha | Play Console → app → Main store listing | **Ready:** upload `assets/icon-512.png` (flatten alpha if Console complains). |
-| 4.2 | 🔲 **Screenshots** (min 2, rec 3–8) | Phone: 16:9 or 9:16, min 320px, max 3840px JPEG/PNG | Play Console → Main store listing | **Starter set included:** `screenshots/01_splash.png … 08_routes.png` (true 1080×2340 renders, unique art per region + boss lair). Regenerate any time with `npm i @napi-rs/canvas && node scripts/screenshot.js`. For live captures, run on a real device and use `adb exec-out screencap -p > shot.png`. |
+| 4.2 | 🔲 **Screenshots** (min 2, rec 3–8) | Phone: 16:9 or 9:16, min 320px, max 3840px JPEG/PNG | Play Console → Main store listing | **Starter set included:** `screenshots/01_splash.png … 09_map.png` (true 1080×2340 renders, unique art per region + boss lair). Regenerate any time with `npm i @napi-rs/canvas && node scripts/screenshot.js`. For live captures, run on a real device and use `adb exec-out screencap -p > shot.png`. |
 | 4.3 | 🔲 Feature graphic (optional but recommended) | 1024×500 PNG/JPEG | Play Console → Main store listing | **Ready:** upload `screenshots/feature_graphic.png` (longship key art + "Viking Raid" + tagline, exact 1024×500). |
 | 4.4 | 🔲 Short description | ≤ 80 chars | Main store listing | e.g. *"Plunder, level & set sail. An epic Viking raiding RPG."* |
 | 4.5 | 🔲 Full description | ≤ 4000 chars | Main store listing | Expand on features: loops, loot, runes, daily quests, prestige, offline play. |

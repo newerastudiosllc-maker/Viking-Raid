@@ -338,6 +338,8 @@
       { id: "warband_100",name: "Legion of the North",  icon: "⚜️", desc: "Hire 100 specialists.",           check: (s) => { const u = s.units || {}; return ((u.berserker||0)+(u.archer||0)+(u.shieldmaiden||0)) >= 100; }, reward: { shards: 5 } },
       { id: "storm_5",    name: "Storm Chaser",         icon: "🌊", desc: "Brave the Storm Strait 5 times.", check: (s) => ((s.routeStats && s.routeStats.storm) || 0) >= 5, reward: { runes: 12 } },
       { id: "cursed_5",   name: "Grave Robber",         icon: "🧭", desc: "Dare the Cursed Channel 5 times.", check: (s) => ((s.routeStats && s.routeStats.cursed) || 0) >= 5, reward: { shards: 4 } },
+      { id: "cache_5",    name: "Treasure Hunter",      icon: "💰", desc: "Plunder 5 treasure caches.",      check: (s) => ((s.totals && s.totals.caches) || 0) >= 5, reward: { runes: 10 } },
+      { id: "cache_25",   name: "Hoard Whisperer",      icon: "🗝️", desc: "Plunder 25 treasure caches.",     check: (s) => ((s.totals && s.totals.caches) || 0) >= 25, reward: { shards: 4 } },
     ],
 
     // --- Village modifiers (per-fight affixes; hp/dps/gold/xp are multipliers) ---
@@ -376,6 +378,7 @@
       { id: "upgrade",  track: "upgrades",  verb: "Forge",       noun: "upgrades",   goal: 6,   reward: { runes: 4 } },
       { id: "enchant",  track: "enchants",  verb: "Enchant",     noun: "items",      goal: 1,   reward: { runes: 7, shards: 1 } },
       { id: "hire",     track: "hires",     verb: "Hire",        noun: "specialists", goal: 8,  reward: { runes: 4 } },
+      { id: "cache",    track: "caches",    verb: "Plunder",     noun: "treasure caches", goal: 2, reward: { runes: 5 } },
     ],
 
 

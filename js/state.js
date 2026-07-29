@@ -68,6 +68,7 @@
         taps: 0,
         crits: 0,
         maxCombo: 0,
+        caches: 0,
       },
       loot: {
         inventory: [],

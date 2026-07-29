@@ -76,7 +76,7 @@
       const chance = CONFIG.LOOT_PROMOTE[tier] * (1 + luck * 0.1);
       if (rng() < chance) tier++; else break;
     }
-    tier = Math.min(DATA.RARITY.length - 1, tier + (opts.rarityBonus || 0));
+    tier = Math.min(DATA.RARITY.length - 1, tier + Math.floor(opts.rarityBonus || 0));
     const R = DATA.RARITY[tier];
     // distinct affixes
     const pool = DATA.AFFIXES.slice();
@@ -640,6 +640,29 @@
     const drop = Sys.rollDrop(v.region, wasBoss);
     if (drop) { Sys._addItem(drop); G.emit("drop", drop); }
 
+    // treasure cache village: bonus plunder + runes (map reward)
+    if (Sys.isCacheVillage(v.region, v.index)) {
+      const cacheGold = Math.ceil(F.villageGold(v.region, v.index) * CONFIG.CACHE_GOLD_FACTOR * G.derived.goldMult);
+      const cacheRunes = CONFIG.CACHE_RUNES_BASE + Math.floor(v.region * CONFIG.CACHE_RUNES_REGION);
+      s.gold += cacheGold;
+      s.totals.goldEarned += cacheGold;
+      s.loot.runes += cacheRunes;
+      s.loot.totalRunes += cacheRunes;
+      s.totals.caches = (s.totals.caches || 0) + 1;
+      Sys.daily("caches", 1);
+      G.emit("cache", { gold: cacheGold, runes: cacheRunes, name: v.name });
+    }
+
+    // region conquered: the Jarl's chest — huge gold + guaranteed item
+    if (wasBoss) {
+      const chestGold = Math.ceil(F.villageGold(v.region, v.index) * CONFIG.REGION_CHEST_GOLD_FACTOR * G.derived.goldMult);
+      s.gold += chestGold;
+      s.totals.goldEarned += chestGold;
+      const chestItem = Sys.genItem(v.region, { rarityBonus: CONFIG.LOOT_BOSS_RARITY_BONUS + CONFIG.REGION_CHEST_RARITY_BONUS });
+      Sys._addItem(chestItem);
+      G.emit("regionChest", { gold: chestGold, item: chestItem, region: v.region });
+    }
+
     // heal ship on victory
     const heal = G.derived.shipMaxHp * CONFIG.REGEN_ON_CLEAR_BONUS;
     s.shipHp = Math.min(G.derived.shipMaxHp, s.shipHp + heal);
@@ -687,6 +710,50 @@
 
   Sys.currentRoute = function () {
     return DATA.ROUTE_BY_ID[G.state.route || "calm"] || DATA.ROUTES[0];
+  };
+
+  // --- Saga Chart (region map) ---------------------------------------
+  // Deterministic treasure-cache villages for a region (never the boss).
+  Sys.cacheIndices = function (region) {
+    const rng = DATA.rng(((region + 13) * 15731 + 789221) >>> 0);
+    const picks = [];
+    while (picks.length < CONFIG.CACHES_PER_REGION) {
+      const i = Math.floor(rng() * CONFIG.BOSS_INDEX); // 0..boss-1
+      if (picks.indexOf(i) < 0) picks.push(i);
+    }
+    picks.sort(function (a, b) { return a - b; });
+    return picks;
+  };
+
+  Sys.isCacheVillage = function (region, index) {
+    return Sys.cacheIndices(region).indexOf(index) >= 0;
+  };
+
+  // Node list powering the map screen. Scouting: current + MAP_SCOUT_AHEAD
+  // villages are revealed; the rest lie under fog (bosses always loom visible).
+  Sys.regionNodes = function () {
+    const s = G.state;
+    const region = s.region;
+    const caches = Sys.cacheIndices(region);
+    const nodes = [];
+    for (let i = 0; i < CONFIG.VILLAGES_PER_REGION; i++) {
+      const v = Sys.genVillage(region, i);
+      const cleared = i < s.villageIndex;
+      const current = i === s.villageIndex;
+      const scouted = v.isBoss || cleared || current || i <= s.villageIndex + CONFIG.MAP_SCOUT_AHEAD;
+      nodes.push({
+        index: i,
+        name: scouted ? v.name : "Uncharted",
+        isBoss: v.isBoss,
+        cache: caches.indexOf(i) >= 0 && (scouted || cleared),
+        mod: scouted && v.mod && v.mod.id !== "none" ? v.mod : null,
+        gold: scouted ? v.gold : 0,
+        cleared: cleared,
+        current: current,
+        scouted: scouted,
+      });
+    }
+    return nodes;
   };
 
   // --- Retreat (longship overwhelmed) ------------------------------

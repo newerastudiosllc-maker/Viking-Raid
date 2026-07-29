@@ -190,6 +190,15 @@
     // --- Expedition routes (chosen at each new region) ----------------
     ROUTE_UNLOCK_REGION: 1,           // choice appears entering region 2+
 
+    // --- Saga Chart (region map) ---------------------------------------
+    MAP_SCOUT_AHEAD: 2,               // villages revealed beyond the current one
+    CACHES_PER_REGION: 2,             // treasure-cache villages per region
+    CACHE_GOLD_FACTOR: 6,             // cache bonus ≈ 6 villages worth of gold
+    CACHE_RUNES_BASE: 3,              // + runes (scales with region)
+    CACHE_RUNES_REGION: 0.5,
+    REGION_CHEST_GOLD_FACTOR: 14,     // region-clear chest ≈ 14 villages of gold
+    REGION_CHEST_RARITY_BONUS: 0.10,  // guaranteed item w/ boss-tier rarity boost
+
     // --- Boss fury / stagger -----------------------------------------
     BOSS_FURY_HP_FRAC: 0.35,
     BOSS_STAGGER_S: 4,

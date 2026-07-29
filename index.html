@@ -41,6 +41,7 @@
       </div>
       <div class="hud-right">
         <div id="levelBadge" class="level-badge">LVL 1</div>
+        <button id="mapBtn" class="icon-btn" aria-label="Saga chart">🗺️</button>
         <button id="dailyBtn" class="icon-btn" aria-label="Daily quests">📜</button>
         <button id="menuBtn" class="icon-btn" aria-label="Menu">⚙</button>
       </div>
@@ -136,6 +137,19 @@
       <div class="daily-meta">🔥 Streak: <b id="dailyStreak">0</b> &nbsp;·&nbsp; Resets at UTC midnight</div>
       <div id="dailyList"></div>
       <button id="dailyClose" class="btn-primary">Close</button>
+    </div>
+  </div>
+
+  <!-- ===================== SAGA CHART (MAP) ===================== -->
+  <div id="modalMap" class="modal">
+    <div class="modal-card map-card">
+      <h2>🗺️ Saga Chart <span id="mapRegionName" class="map-region"></span></h2>
+      <div class="map-sub">Your voyage through this land. <b id="mapProgress"></b></div>
+      <div id="mapTrail" class="map-trail"></div>
+      <div class="map-legend">
+        <span>⚔ village</span><span>💰 treasure cache</span><span>☠ boss lair</span><span>🌫 uncharted</span>
+      </div>
+      <button id="mapClose" class="btn-primary">Back to the Raid</button>
     </div>
   </div>
 

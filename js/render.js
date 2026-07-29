@@ -539,6 +539,12 @@
       (v.isBoss ? "BOSS LAIR · " : "") + formatNum(Math.max(0, v.hp)) + " / " + formatNum(v.maxHp),
       cx, cy + R * 1.55
     );
+    // treasure-cache marker (bobbing coin bag above the target)
+    if (window.Sys && Sys.isCacheVillage && Sys.isCacheVillage(v.region, v.index) && !v.isBoss) {
+      const bob = Math.sin(time * 3) * 5;
+      ctx.font = "" + Math.max(18, Math.floor(W * 0.055)) + "px serif";
+      ctx.fillText("💰", cx + R * 0.98, cy - R * 0.98 + bob);
+    }
     // modifier badge
     if (v.mod && v.mod.id && v.mod.id !== "none") {
       const my = cy + R * 1.55 + 20;

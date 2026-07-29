@@ -281,6 +281,31 @@ check("route badge shows in HUD", () => {
   if (doc.getElementById("regionBadge").textContent.indexOf("Storm Strait") < 0) throw new Error("route not in badge");
 });
 
+check("map opens with a full trail", () => {
+  doc.getElementById("mapBtn").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (!doc.getElementById("modalMap").classList.contains("show")) throw new Error("map modal not shown");
+  const nodes = doc.querySelectorAll("#mapTrail .map-node:not(.teaser)");
+  if (nodes.length !== window.CONFIG.VILLAGES_PER_REGION) throw new Error("expected " + window.CONFIG.VILLAGES_PER_REGION + " nodes, got " + nodes.length);
+});
+
+check("map marks current village and next-region teaser", () => {
+  if (!doc.querySelector("#mapTrail .map-node.current")) throw new Error("no current node");
+  if (!doc.querySelector("#mapTrail .map-node.teaser")) throw new Error("no teaser node");
+  doc.getElementById("mapClose").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (doc.getElementById("modalMap").classList.contains("show")) throw new Error("map did not close");
+});
+
+check("cache clear fires toast reward", () => {
+  const caches = window.Sys.cacheIndices(G().state.region);
+  G().state.villageIndex = caches[0];
+  window.Sys.setVillage(G().state.region, caches[0]);
+  const runes0 = G().state.loot.runes;
+  G().village.hp = 0;
+  window.Sys.clearVillage();
+  if (G().state.loot.runes <= runes0) throw new Error("cache runes not granted");
+  if ((G().state.totals.caches || 0) < 1) throw new Error("cache not counted");
+});
+
 driveFrames(10);
 
 console.log("\n== CHECKS ==");

@@ -70,6 +70,16 @@
       if (d.boss) { SFX.boss(); UI.toast("☠ BOSS LAIR SACKED! +" + Render.formatNum(d.gold) + " 🪙", 2400); }
       else SFX.clear();
     });
+    G.on("cache", function (d) {
+      if (G.fx) G.fx.clearBurst(true);
+      SFX.upgrade();
+      UI.toast("💰 TREASURE CACHE! +" + Render.formatNum(d.gold) + " 🪙 · +" + d.runes + " 🔮", 2600);
+    });
+    G.on("regionChest", function (d) {
+      if (G.fx) G.fx.levelUp();
+      SFX.boss();
+      UI.toast("🗝️ THE JARL'S CHEST! +" + Render.formatNum(d.gold) + " 🪙 + " + d.item.name, 3000);
+    });
     G.on("levelup", function (lvl) {
       if (G.fx) G.fx.levelUp();
       SFX.level();

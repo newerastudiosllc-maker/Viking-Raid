@@ -43,6 +43,8 @@
       dailyBtn: $("dailyBtn"), modalDaily: $("modalDaily"),
       dailyList: $("dailyList"), dailyStreak: $("dailyStreak"), dailyClose: $("dailyClose"),
       modalRoute: $("modalRoute"), routeList: $("routeList"),
+      mapBtn: $("mapBtn"), modalMap: $("modalMap"), mapTrail: $("mapTrail"),
+      mapRegionName: $("mapRegionName"), mapProgress: $("mapProgress"), mapClose: $("mapClose"),
       onboarding: $("onboarding"), obIcon: $("obIcon"), obTitle: $("obTitle"),
       obText: $("obText"), obNext: $("obNext"), obSkip: $("obSkip"), obDots: $("obDots"),
       unspent: $("unspentPts"), statList: $("statList"),
@@ -83,6 +85,8 @@
 
     // daily quests
     el.dailyBtn.addEventListener("click", function () { Sys.dailyRollover(); UI.refreshDailies(); UI.openModal("modalDaily"); });
+    if (el.mapBtn) el.mapBtn.addEventListener("click", function () { UI.showMap(); });
+    if (el.mapClose) el.mapClose.addEventListener("click", function () { UI.closeModal("modalMap"); });
     el.dailyClose.addEventListener("click", function () { UI.closeModal("modalDaily"); });
 
     // achievements
@@ -725,7 +729,17 @@
       (v && v.isBoss ? " · BOSS" : "") +
       (v && v.mod && v.mod.id !== "none" ? " · " + v.mod.icon + " " + v.mod.name : "") +
       (rt && rt.id !== "calm" ? " · " + rt.emoji + " " + rt.name : "") +
+      (Sys.isCacheVillage && Sys.isCacheVillage(s.region, s.villageIndex) ? " · 💰 CACHE" : "") +
       "</span>";
+    // map button glows when a treasure cache is within scouting range ahead
+    if (el.mapBtn && Sys.cacheIndices) {
+      const caches = Sys.cacheIndices(s.region);
+      let near = false;
+      for (let i = 0; i < caches.length; i++) {
+        if (caches[i] >= s.villageIndex && caches[i] <= s.villageIndex + CONFIG.MAP_SCOUT_AHEAD) { near = true; break; }
+      }
+      el.mapBtn.classList.toggle("gold-badge", near);
+    }
     el.tapVal.textContent = "⚔ " + fmt(d.tapDmg);
     el.crewVal.textContent = "🪓 " + fmt(d.crewDps) + "/s";
 
@@ -766,6 +780,56 @@
   };
 
   // --- Toast & modals ----------------------------------------------
+  // --- Saga Chart (map) ---------------------------------------------
+  UI.showMap = function () {
+    if (!el.modalMap) return;
+    const s = G.state;
+    const nodes = Sys.regionNodes();
+    el.mapRegionName.textContent = DATA.regionName(s.region);
+    const cleared = nodes.filter(function (n) { return n.cleared; }).length;
+    el.mapProgress.textContent = cleared + "/" + nodes.length + " conquered";
+    let html = "";
+    nodes.forEach(function (n, i) {
+      const cls = ["map-node"];
+      if (n.cleared) cls.push("cleared");
+      if (n.current) cls.push("current");
+      if (!n.scouted) cls.push("fog");
+      if (n.isBoss) cls.push("boss");
+      if (n.cache) cls.push("cache");
+      const icon = !n.scouted ? "🌫" : n.isBoss ? "☠" : n.cache ? "💰" : n.cleared ? "✓" : "⚔";
+      const sub = !n.scouted
+        ? "Scout closer to reveal"
+        : (n.isBoss ? "Boss Lair" : n.cache ? "Treasure cache — bonus plunder!" : "Village " + (n.index + 1)) +
+          (n.mod ? " · " + n.mod.icon + " " + n.mod.name : "");
+      html +=
+        '<div class="' + cls.join(" ") + '">' +
+          (i > 0 ? '<span class="map-link' + (n.cleared || n.current ? " lit" : "") + '"></span>' : "") +
+          '<span class="map-dot">' + icon + '</span>' +
+          '<span class="map-info">' +
+            '<span class="map-name">' + n.name + '</span>' +
+            '<span class="map-detail">' + sub + '</span>' +
+          '</span>' +
+          (n.scouted && !n.cleared && n.gold ? '<span class="map-gold">🪙 ' + fmt(n.gold) + '</span>' : "") +
+          (n.cleared ? '<span class="map-gold done">plundered</span>' : "") +
+        '</div>';
+    });
+    // next region teaser — the hook to keep pushing
+    html +=
+      '<div class="map-node teaser">' +
+        '<span class="map-link"></span>' +
+        '<span class="map-dot">🧭</span>' +
+        '<span class="map-info">' +
+          '<span class="map-name">' + DATA.regionName(s.region + 1) + '</span>' +
+          '<span class="map-detail">Conquer this land to chart a new course…</span>' +
+        '</span>' +
+      '</div>';
+    el.mapTrail.innerHTML = html;
+    UI.openModal("modalMap");
+    // auto-scroll the trail to the current node
+    const cur = el.mapTrail.querySelector(".map-node.current");
+    if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: "center" });
+  };
+
   // --- Expedition route choice -------------------------------------
   UI.showRouteChoice = function () {
     if (!el.modalRoute) return;

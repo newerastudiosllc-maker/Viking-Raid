@@ -2,7 +2,7 @@
    VIKING RAID — service worker (offline app shell)
    New Era Studios LLC
    ============================================================ */
-const CACHE = "viking-raid-v5";
+const CACHE = "viking-raid-v6";
 const SHELL = [
   "./",
   "./index.html",
@@ -39,6 +39,7 @@ const SHELL = [
   "./assets/icons/route_calm.png",
   "./assets/icons/route_storm.png",
   "./assets/icons/route_cursed.png",
+  "./assets/map_chart.png",
   "./assets/icons/tab_raid.png",
   "./assets/icons/tab_forge.png",
   "./assets/icons/tab_hero.png",

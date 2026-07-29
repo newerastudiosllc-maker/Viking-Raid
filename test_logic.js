@@ -312,6 +312,71 @@ console.log("\n== Expedition routes ==");
   })());
 })();
 
+console.log("\n== Saga Chart (map, caches, region chest) ==");
+(function () {
+  const s = State.defaults();
+  Sys.init(s);
+  ok("cache indices deterministic", JSON.stringify(Sys.cacheIndices(3)) === JSON.stringify(Sys.cacheIndices(3)));
+  ok("2 caches per region", Sys.cacheIndices(0).length === CONFIG.CACHES_PER_REGION);
+  ok("caches never on the boss", Sys.cacheIndices(7).every(function (i) { return i < CONFIG.BOSS_INDEX; }));
+  ok("caches differ across regions", (function () {
+    for (let r = 0; r < 6; r++) {
+      if (JSON.stringify(Sys.cacheIndices(r)) !== JSON.stringify(Sys.cacheIndices(r + 1))) return true;
+    }
+    return false;
+  })());
+  const nodes = Sys.regionNodes();
+  ok("map lists every village", nodes.length === CONFIG.VILLAGES_PER_REGION);
+  ok("current node flagged", nodes[s.villageIndex].current === true);
+  ok("boss node always scouted", nodes[CONFIG.BOSS_INDEX].scouted === true && nodes[CONFIG.BOSS_INDEX].isBoss === true);
+  ok("fog beyond scout range", (function () {
+    const far = nodes.filter(function (n) { return !n.scouted; });
+    return far.every(function (n) { return n.index > s.villageIndex + CONFIG.MAP_SCOUT_AHEAD && !n.isBoss && n.name === "Uncharted"; });
+  })());
+  ok("cache nodes marked when scouted", (function () {
+    const caches = Sys.cacheIndices(s.region);
+    return nodes.some(function (n) { return n.cache && caches.indexOf(n.index) >= 0; }) ||
+           caches.every(function (i) { return i > s.villageIndex + CONFIG.MAP_SCOUT_AHEAD; });
+  })());
+  // cache reward path
+  ok("cache clear grants bonus gold + runes", (function () {
+    const cacheIdx = Sys.cacheIndices(0)[0];
+    const s2 = State.defaults();
+    s2.villageIndex = cacheIdx;
+    Sys.init(s2);
+    let fired = null;
+    G.on("cache", function (d) { fired = d; });
+    const runes0 = s2.loot.runes, gold0 = s2.gold;
+    G.village.hp = 0;
+    Sys.clearVillage();
+    return fired && fired.gold > 0 && s2.loot.runes > runes0 && s2.gold > gold0 && s2.totals.caches === 1;
+  })());
+  ok("non-cache village grants no cache", (function () {
+    const caches = Sys.cacheIndices(0);
+    let idx = -1;
+    for (let i = 0; i < CONFIG.BOSS_INDEX; i++) if (caches.indexOf(i) < 0) { idx = i; break; }
+    const s3 = State.defaults();
+    s3.villageIndex = idx;
+    Sys.init(s3);
+    let fired = false;
+    G.on("cache", function () { fired = true; });
+    G.village.hp = 0;
+    Sys.clearVillage();
+    return !fired && (s3.totals.caches || 0) === 0;
+  })());
+  ok("boss clear opens the Jarl's chest (gold + item)", (function () {
+    const s4 = State.defaults();
+    s4.villageIndex = CONFIG.BOSS_INDEX;
+    Sys.init(s4);
+    let chest = null;
+    G.on("regionChest", function (d) { chest = d; });
+    const inv0 = s4.loot.inventory.length + (s4.loot.equipped.weapon ? 1 : 0);
+    G.village.hp = 0;
+    Sys.clearVillage();
+    return chest && chest.gold > 0 && chest.item && chest.item.slot;
+  })());
+})();
+
 console.log("\n== Save / load ==");
 State.save(st);
 const ld = State.load();

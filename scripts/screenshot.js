@@ -204,6 +204,7 @@ async function main() {
   for (const n of ["ab_berserk","ab_shield","ab_horn","ab_valkyrie","ab_ragnarok","tab_raid","tab_forge","tab_hero","tab_loot","tab_saga","unit_berserker","unit_archer","unit_shieldmaiden","route_calm","route_storm","route_cursed"]) {
     IMG[n] = await loadImage(path.resolve(__dirname, "..", "assets", "icons", n + ".png"));
   }
+  IMG.map_chart = await loadImage(path.resolve(__dirname, "..", "assets", "map_chart.png"));
   const time = 1.2;
 
   await shot("01_splash", function (c) {
@@ -330,6 +331,47 @@ async function main() {
       c.fillStyle="#b9b3a4"; c.font="26px sans-serif"; c.fillText(r[2], 330, ry+130);
       c.fillStyle="#caa24a"; c.font="italic 26px serif"; c.fillText(r[3], 330, ry+180);
       ry += 260;
+    });
+    drawChrome(c, st, v);
+  });
+
+  await shot("09_map", function (c) {
+    const st = makeState({ region: 2, villageIndex: 5, gold: 12400000, level: 33, rage: 0.5 });
+    Sys.init(st); const v = G.village;
+    buildWeather(st.region); drawBackground(c, st.region); drawWeather(c, st.region);
+    c.fillStyle = "rgba(3,5,9,0.66)"; c.fillRect(0, 0, W, H);
+    const px = 60, py = H*0.155, pw = W-120, ph = H*0.62;
+    // parchment chart backdrop
+    c.save(); roundRect(c, px, py, pw, ph, 36); c.clip();
+    if (IMG.map_chart) { const im = IMG.map_chart, sc = Math.max(pw/im.width, ph/im.height); c.globalAlpha=0.9; c.drawImage(im, px+(pw-im.width*sc)/2, py+(ph-im.height*sc)/2, im.width*sc, im.height*sc); c.globalAlpha=1; }
+    c.fillStyle = "rgba(8,10,16,0.82)"; c.fillRect(px, py, pw, ph);
+    c.restore();
+    c.strokeStyle = "#caa24a"; c.lineWidth = 3; roundRect(c, px, py, pw, ph, 36); c.stroke();
+    c.textAlign="left"; c.fillStyle="#ffd870"; c.font="bold 52px serif"; c.fillText("Saga Chart", px+50, py+85);
+    c.fillStyle="#9a9484"; c.font="30px sans-serif"; c.fillText("Ironwood Forest — 5/10 conquered", px+50, py+135);
+    const nodes = [
+      ["✓","Wolfmere Village","plundered","#5fd17a",true,false],
+      ["✓","Ashby Camp","plundered","#5fd17a",true,false],
+      ["✦","Ravenholt Hamlet","Treasure cache — plundered!","#5fd17a",true,false],
+      ["✓","Thornwick Village","plundered","#5fd17a",true,false],
+      ["✓","Saltfell Camp","plundered","#5fd17a",true,false],
+      ["⚔","Bonegard Village","YOU ARE HERE","#ffd870",false,true],
+      ["✦","Frostpeak Hamlet","Treasure cache ahead!","#caa24a",false,false],
+      ["⚔","Greyness Village","Frenzied — deadlier defenses","#b9b3a4",false,false],
+      ["?","Uncharted","Scout closer to reveal","#6f6a5c",false,false],
+      ["☠","Jarl Skullsplitter's Lair","Boss Lair","#e0533d",false,false],
+    ];
+    let ny = py + 185; const rowH = (ph - 200) / nodes.length;
+    nodes.forEach((n, i)=>{
+      const dx = px+95;
+      if (i>0) { c.strokeStyle = nodes[i-1][4] || n[5] ? "#caa24a" : "rgba(255,255,255,0.15)"; c.lineWidth=4; c.beginPath(); c.moveTo(dx, ny-rowH+26+26); c.lineTo(dx, ny+26-26); c.stroke(); }
+      c.beginPath(); c.arc(dx, ny+26, 32, 0, Math.PI*2);
+      c.fillStyle = n[5] ? "rgba(255,216,112,0.2)" : n[4] ? "rgba(95,209,122,0.15)" : "rgba(255,255,255,0.06)"; c.fill();
+      c.lineWidth = n[5] ? 5 : 3; c.strokeStyle = n[3]; c.stroke();
+      c.font="30px serif"; c.textAlign="center"; c.textBaseline="middle"; c.fillStyle=n[3]; c.fillText(n[0], dx, ny+27); c.textBaseline="alphabetic";
+      c.textAlign="left"; c.fillStyle = n[5] ? "#ffd870" : "#ece7d8"; c.font=(n[5]?"bold ":"")+"33px serif"; c.fillText(n[1], dx+70, ny+18);
+      c.fillStyle="#9a9484"; c.font="24px sans-serif"; c.fillText(n[2], dx+70, ny+52);
+      ny += rowH;
     });
     drawChrome(c, st, v);
   });

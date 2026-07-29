@@ -332,6 +332,52 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; ba
 .off-row b { color: var(--gold-bright); }
 .modal-card p { font-size: 13px; color: var(--parchment); line-height: 1.5; }
 
+/* ===================== SAGA CHART (MAP) ===================== */
+.map-card {
+  max-width: 420px;
+  background:
+    linear-gradient(rgba(8,10,16,0.88), rgba(8,10,16,0.92)),
+    url("assets/map_chart.png") center/cover no-repeat, var(--panel-solid);
+}
+.map-region { font-size: 13px; color: var(--parchment); font-weight: 600; margin-left: 6px; }
+.map-sub { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.map-sub b { color: var(--gold-bright); }
+.map-trail { max-height: 52vh; overflow-y: auto; padding: 4px 2px; }
+.map-node {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  padding: 10px 8px 10px 14px; margin-left: 10px;
+}
+.map-link {
+  position: absolute; left: 32px; top: -14px; width: 3px; height: 24px;
+  background: rgba(255,255,255,0.12); border-radius: 2px;
+}
+.map-link.lit { background: var(--gold-soft); box-shadow: 0 0 6px rgba(202,162,74,0.6); }
+.map-dot {
+  width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center; font-size: 17px;
+  background: var(--iron); border: 2px solid var(--iron-light); z-index: 1;
+}
+.map-node.cleared .map-dot { background: rgba(95,209,122,0.16); border-color: var(--green); color: var(--green); }
+.map-node.current .map-dot {
+  border-color: var(--gold-bright); box-shadow: 0 0 14px rgba(255,216,112,0.55);
+  animation: mapPulse 1.6s infinite;
+}
+.map-node.boss .map-dot { border-color: var(--blood-bright); background: rgba(224,83,61,0.14); }
+.map-node.cache:not(.cleared) .map-dot { border-color: var(--gold-soft); background: rgba(202,162,74,0.15); }
+.map-node.fog { opacity: 0.45; filter: grayscale(0.6); }
+.map-node.teaser { opacity: 0.6; }
+@keyframes mapPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+.map-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.map-name { font-weight: 800; font-size: 13.5px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.map-node.current .map-name { color: var(--gold-bright); }
+.map-detail { font-size: 11px; color: var(--muted); }
+.map-gold { font-size: 11px; font-weight: 800; color: var(--gold-bright); flex: 0 0 auto; }
+.map-gold.done { color: var(--green); font-style: italic; font-weight: 600; }
+.map-legend {
+  display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 12px;
+  font-size: 10.5px; color: var(--muted);
+}
+
 /* ===================== EXPEDITION ROUTES ===================== */
 .route-sub { font-size: 12px; color: var(--muted); line-height: 1.45; margin-bottom: 14px; }
 .route-card {
@@ -410,6 +456,11 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 12px 0;
 .icon-btn.badge::after {
   content: ""; position: absolute; top: 3px; right: 3px; width: 9px; height: 9px; border-radius: 50%;
   background: var(--blood-bright); border: 2px solid var(--bg); box-shadow: 0 0 6px var(--blood-bright);
+}
+.icon-btn.gold-badge { position: relative; animation: mapPulse 1.6s infinite; }
+.icon-btn.gold-badge::after {
+  content: ""; position: absolute; top: 3px; right: 3px; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--gold-bright); border: 2px solid var(--bg); box-shadow: 0 0 6px var(--gold-bright);
 }
 .daily-meta { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
 .daily-meta b { color: var(--gold-bright); }
