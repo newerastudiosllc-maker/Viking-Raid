@@ -163,6 +163,28 @@
     // --- Achievements ------------------------------------------------
     ACHIEVEMENT_CHECK_INTERVAL_S: 2,
 
+    // --- Village modifiers (per-fight variety) -----------------------
+    MODIFIER_CHANCE_PER_REGION: 0.07, // +7% chance per region tier
+    MODIFIER_CHANCE_CAP: 0.65,
+    MODIFIER_CHANCE_BASE: 0.0,        // region 0 stays clean (gentle intro)
+    MODIFIER_BOSS_ALWAYS: true,       // boss lairs always carry a modifier
+
+    // --- Ragnarök ultimate (Rage meter) ------------------------------
+    RAGE_PER_TAP: 0.0014,
+    RAGE_PER_CLEAR: 0.06,
+    RAGE_PER_BOSS: 0.24,
+    RAGE_CAP: 1,
+    RAGNAROK_DMG_CREW_SECONDS: 45,    // instant burst ~= 45s of crew dps
+    RAGNAROK_DMG_MIN_FRAC: 0.22,      // …or at least 22% of target max HP
+    RAGNAROK_BUFF_S: 8,
+    RAGNAROK_BUFF_MULT: 2,
+
+    // --- Boss fury / stagger -----------------------------------------
+    BOSS_FURY_HP_FRAC: 0.35,
+    BOSS_STAGGER_S: 4,
+    BOSS_STAGGER_DMG_MULT: 2,
+    BOSS_FURY_DPS_MULT: 2.5,
+
     // --- Misc / feel --------------------------------------------------
     FLOATER_LIFE_MS: 850,
     MAX_FLOATERS: 60,

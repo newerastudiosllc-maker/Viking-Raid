@@ -84,6 +84,8 @@
     G.on("newRegion", function (reg) {
       UI.toast("🗺️ New region: " + DATA.regionName(reg));
     });
+    G.on("bossStagger", function () { SFX.ability(); UI.toast("💥 BOSS STAGGERED — burst it down!", 2200); });
+    G.on("bossFury", function () { SFX.retreat(); UI.toast("😡 The Boss ENRAGES — raise shields!", 2400); });
     G.on("drop", function (it) {
       const R = DATA.RARITY[it.rarity];
       if (it.rarity >= 3) { SFX.boss(); UI.toast("✨ " + R.name + " loot — " + it.name + "!", 2600); }

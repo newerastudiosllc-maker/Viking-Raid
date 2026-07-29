@@ -114,10 +114,10 @@ Sys._addItem(item);
 ok("item added to inventory", S.loot.inventory.length === inv0 + 1);
 Sys.equipItem(item.uid);
 ok("item equipped into its slot", S.loot.equipped[item.slot] && S.loot.equipped[item.slot].uid === item.uid);
-const tapBeforeEq = G.derived.tapDmg;
 Sys.unequip(item.slot);
 Sys.recompute();
 ok("unequip removes item", S.loot.equipped[item.slot] === null);
+const tapBeforeEq = G.derived.tapDmg; // clean baseline (nothing equipped)
 // craft a strong tap item to verify equipment changes derived stats
 const strong = Sys.genItem(0, {});
 strong.affixes = [{ stat: "tapPct", base: 0.5, rarity: 5 }];
@@ -162,6 +162,7 @@ Sys.init(State.defaults());
 Sys.tap(); Sys.tap(); Sys.tap();
 ok("combo builds on tap", G.runtime.combo === 3);
 ok("combo multiplier scales", Sys.comboMult() > 1);
+G.runtime.hitstop = 0;
 Sys.tick(CONFIG.COMBO_WINDOW_MS / 1000 + 0.2);
 ok("combo decays after idle window", G.runtime.combo === 0);
 G.state.totals.raids = 5; G.state.totals.bosses = 1;
@@ -179,6 +180,33 @@ ok("auto-equip best fills weapon slot", G.state.loot.equipped.weapon !== null);
 Sys._addItem(Sys.genItem(0, {}));
 const salR = Sys.salvageBelowRarity(2);
 ok("bulk salvage returns result", typeof salR.count === "number");
+
+console.log("\n== Modifiers, Ragnarok & boss mechanics ==");
+Sys.init(State.defaults());
+ok("village carries a modifier", !!G.village.mod && DATA.MODIFIER_BY_ID[G.village.mod.id]);
+(function () {
+  const sv = Sys.genVillage(2, 3);
+  ok("modifier hp formula applied", Math.abs(sv.maxHp - F.villageHp(2, 3) * sv.type.hp * sv.mod.hp) < 0.01);
+})();
+ok("hexed modifier disables crits", DATA.MODIFIER_BY_ID["hexed"].crit === false);
+G.runtime.rage = 0;
+for (let i = 0; i < 300; i++) Sys.tap();
+ok("rage builds from tapping", G.runtime.rage > 0);
+G.village = Sys.genVillage(5, 0);
+const hpB = G.village.hp;
+G.runtime.rage = CONFIG.RAGE_CAP;
+ok("ragnarok unleashes when ready", Sys.unleashRagnarok() === true);
+ok("ragnarok deals damage", G.village.hp < hpB);
+ok("ragnarok resets rage", G.runtime.rage < CONFIG.RAGE_CAP);
+ok("ragnarok grants buff", G.runtime.ragBuff > 0);
+ok("ragnarok not ready after use", Sys.rageReady() === false);
+const boss = Sys.genVillage(0, CONFIG.BOSS_INDEX);
+G.village = boss; boss.hp = boss.maxHp * 0.2;
+G.runtime.hitstop = 0;
+Sys.tick(0.05);
+ok("boss staggers below 35% HP", boss.staggered === true);
+G.runtime.hitstop = 0; boss.stagger = 0.01; Sys.tick(0.05);
+ok("boss enrages after stagger window", boss.fury === true);
 
 console.log("\n== Save / load ==");
 State.save(st);

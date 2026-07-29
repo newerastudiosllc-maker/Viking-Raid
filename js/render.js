@@ -100,6 +100,15 @@
       spawnFloater(cx, cy - 50, "COMBO x" + combo + "!", "#ffd54a", true);
       shake(5);
     },
+    ragnarok: function () {
+      const cx = W / 2, cy = H * 0.42;
+      shockwaves.push({ x: cx, y: cy, r: 10, life: 1.3, color: "#ffd870" });
+      shockwaves.push({ x: cx, y: cy, r: 14, life: 1.6, color: "#ff5a3c" });
+      burst(cx, cy, "#ffd870", 80);
+      burst(cx, cy, "#ff5a3c", 60);
+      spawnFloater(cx, cy - 70, "RAGNAROK!", "#ff8a3c", true);
+      shake(16);
+    },
     levelUp: function () {
       const cx = W / 2, cy = H * 0.42;
       shockwaves.push({ x: cx, y: cy, r: 10, life: 1, color: "#ffd870" });
@@ -507,12 +516,37 @@
     ctx.fillStyle = v.isBoss ? "#ff8a6a" : "#ffe9c7";
     ctx.font = "bold " + Math.max(13, Math.floor(W * 0.045)) + "px 'Cinzel', serif";
     ctx.fillText(v.name, cx, cy - R * 1.55);
+    // boss state indicator above the name
+    if (v.isBoss) {
+      if (v.stagger > 0) {
+        ctx.fillStyle = "rgba(120,210,255," + (0.65 + Math.sin(time * 10) * 0.3) + ")";
+        ctx.font = "bold " + Math.max(11, Math.floor(W * 0.03)) + "px sans-serif";
+        ctx.fillText("STAGGERED — BURST NOW!", cx, cy - R * 1.55 - 16);
+      } else if (v.fury) {
+        ctx.fillStyle = "rgba(255,70,40," + (0.65 + Math.sin(time * 10) * 0.3) + ")";
+        ctx.font = "bold " + Math.max(11, Math.floor(W * 0.03)) + "px sans-serif";
+        ctx.fillText("ENRAGED — defenses furious!", cx, cy - R * 1.55 - 16);
+      }
+    }
     ctx.fillStyle = "rgba(255,255,255,0.6)";
     ctx.font = "" + Math.max(10, Math.floor(W * 0.03)) + "px sans-serif";
     ctx.fillText(
       (v.isBoss ? "BOSS LAIR · " : "") + formatNum(Math.max(0, v.hp)) + " / " + formatNum(v.maxHp),
       cx, cy + R * 1.55
     );
+    // modifier badge
+    if (v.mod && v.mod.id && v.mod.id !== "none") {
+      const my = cy + R * 1.55 + 20;
+      ctx.font = "" + Math.max(11, Math.floor(W * 0.03)) + "px sans-serif";
+      const label = v.mod.icon + " " + v.mod.name;
+      const tw = ctx.measureText(label).width + 24;
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      roundRect(ctx, cx - tw / 2, my - 12, tw, 24, 12); ctx.fill();
+      ctx.fillStyle = v.fury ? "#ff8a6a" : "#ffd870";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, cx, my);
+      ctx.textBaseline = "alphabetic";
+    }
   }
 
   function drawShip(dt) {

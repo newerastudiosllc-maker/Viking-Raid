@@ -216,6 +216,20 @@ check("combo builds on repeated taps", () => {
   if (G().runtime.combo < 5) throw new Error("combo not built (got " + G().runtime.combo + ")");
 });
 
+check("ragnarok button unleashes when rage full", () => {
+  G().runtime.rage = window.CONFIG.RAGE_CAP;
+  const btn = doc.getElementById("ragBtn");
+  if (!btn) throw new Error("no rag button");
+  btn.dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (G().runtime.ragBuff <= 0) throw new Error("ragnarok did not unleash");
+});
+
+check("modifier renders in region badge", () => {
+  G().village.mod = window.DATA.MODIFIER_BY_ID["wealthy"];
+  window.UI.update();
+  if (doc.getElementById("regionBadge").textContent.indexOf("Wealthy") < 0) throw new Error("modifier not shown");
+});
+
 driveFrames(10);
 
 console.log("\n== CHECKS ==");

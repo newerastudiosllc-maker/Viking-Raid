@@ -255,6 +255,12 @@
           '<span class="ab-cd"></span>' +
         '</button>';
     });
+    html +=
+      '<button class="ab-btn rag" id="ragBtn" aria-label="Ragnarok ultimate">' +
+        '<span class="ab-icon">🌩️</span>' +
+        '<span class="ab-lock">RAGE</span>' +
+        '<span class="ab-cd"></span>' +
+      '</button>';
     el.abilities.innerHTML = html;
     abilityEls = {};
     el.abilities.querySelectorAll("[data-ab]").forEach(function (b) {
@@ -267,6 +273,16 @@
         else SFX.error();
       });
     });
+    const ragBtn = $("ragBtn");
+    if (ragBtn) {
+      el.ragBtn = ragBtn;
+      el.ragCd = ragBtn.querySelector(".ab-cd");
+      el.ragLock = ragBtn.querySelector(".ab-lock");
+      ragBtn.addEventListener("click", function () {
+        if (Sys.unleashRagnarok()) { SFX.boss(); }
+        else { SFX.error(); }
+      });
+    }
   }
 
   // --- Refresh routines --------------------------------------------
@@ -643,7 +659,9 @@
     const regName = DATA.regionName(s.region);
     el.regionBadge.innerHTML = '<span class="rb-name">' + regName + "</span>" +
       '<span class="rb-sub">Village ' + (s.villageIndex + 1) + "/" + CONFIG.VILLAGES_PER_REGION +
-      (v && v.isBoss ? " · BOSS" : "") + "</span>";
+      (v && v.isBoss ? " · BOSS" : "") +
+      (v && v.mod && v.mod.id !== "none" ? " · " + v.mod.icon + " " + v.mod.name : "") +
+      "</span>";
     el.tapVal.textContent = "⚔ " + fmt(d.tapDmg);
     el.crewVal.textContent = "🪓 " + fmt(d.crewDps) + "/s";
 
@@ -667,6 +685,16 @@
       else if (st.activeLeft > 0) { e.cd.style.height = "0%"; e.lock.textContent = "ON"; }
       else { e.cd.style.height = "0%"; e.lock.textContent = ""; }
     });
+
+    // Ragnarök ultimate button
+    if (el.ragBtn) {
+      const rf = Sys.rageFrac();
+      const ready = rf >= 1;
+      el.ragCd.style.height = (1 - rf) * 100 + "%";
+      el.ragLock.textContent = ready ? "GO!" : Math.floor(rf * 100) + "%";
+      el.ragBtn.classList.toggle("ready", ready);
+      el.ragBtn.classList.toggle("active", Sys.ragnarokActive());
+    }
 
     if (tab === "forge") UI.refreshForge();
     if (tab === "loot") UI.refreshLoot();

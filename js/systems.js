@@ -363,22 +363,27 @@
     const rng = DATA.rng(seed >>> 0);
     const isBoss = index === CONFIG.BOSS_INDEX;
     const type = DATA.VILLAGE_TYPES[Math.floor(rng() * DATA.VILLAGE_TYPES.length)];
+    const mod = DATA.rollModifier(region, isBoss, rng);
     let name;
     if (isBoss) name = DATA.bossName(rng) + "'s Lair";
     else name = DATA.villageName(rng) + " " + type.word;
 
-    const maxHp = F.villageHp(region, index) * type.hp;
+    const maxHp = F.villageHp(region, index) * type.hp * mod.hp;
     return {
       region: region,
       index: index,
       name: name,
       isBoss: isBoss,
       type: type,
+      mod: mod,
       maxHp: maxHp,
       hp: maxHp,
-      gold: F.villageGold(region, index) * type.gold,
-      xp: F.villageXp(region, index),
-      dps: F.villageDps(region, index),
+      gold: F.villageGold(region, index) * type.gold * mod.gold,
+      xp: F.villageXp(region, index) * mod.xp,
+      dps: F.villageDps(region, index) * mod.dps,
+      stagger: 0,
+      staggered: false,
+      fury: false,
       hitFlash: 0,
       wobble: 0,
     };
@@ -391,6 +396,7 @@
     G.runtime = {
       combo: 0, comboTimer: 0, lastTap: 0, maxCombo: state.totals.maxCombo || 0,
       hitstop: 0, bossBanner: 0, regionWipe: 0, flash: 0, lastRegion: state.region,
+      rage: 0, ragBuff: 0,
     };
     ensureDerived();
     if (state.shipHp < 0 || state.shipHp > G.derived.shipMaxHp) {
@@ -434,10 +440,15 @@
     rt.lastTap = performance.now();
     if (rt.combo > rt.maxCombo) { rt.maxCombo = rt.combo; s.totals.maxCombo = rt.maxCombo; }
     const comboMult = Math.min(CONFIG.COMBO_MULT_CAP, 1 + rt.combo * CONFIG.COMBO_MULT_PER_HIT);
+    rt.rage = Math.min(CONFIG.RAGE_CAP, rt.rage + CONFIG.RAGE_PER_TAP);
 
     let dmg = d.tapDmg * comboMult;
     if (s.abilities.berserk.activeLeft > 0) dmg *= CONFIG.ABILITIES.berserk.mult;
-    let crit = Math.random() < d.critChance || s.abilities.valkyrie.activeLeft > 0;
+    if (rt.ragBuff > 0) dmg *= CONFIG.RAGNAROK_BUFF_MULT;
+    if (v.isBoss && v.stagger > 0) dmg *= CONFIG.BOSS_STAGGER_DMG_MULT;
+    const hexed = v.mod && v.mod.crit === false;
+    const valk = s.abilities.valkyrie.activeLeft > 0;
+    let crit = (!hexed || valk) && (Math.random() < d.critChance || valk);
     if (crit) dmg *= d.critMult;
     dmg = Math.max(1, dmg);
 
@@ -467,6 +478,29 @@
     return Math.min(CONFIG.COMBO_MULT_CAP, 1 + rt.combo * CONFIG.COMBO_MULT_PER_HIT);
   };
 
+  // --- Ragnarök ultimate (Rage meter) -------------------------------
+  Sys.rageFrac = function () { const rt = G.runtime; return rt ? Math.min(1, rt.rage / CONFIG.RAGE_CAP) : 0; };
+  Sys.rageReady = function () { return Sys.rageFrac() >= 1; };
+  Sys.ragnarokActive = function () { const rt = G.runtime; return !!(rt && rt.ragBuff > 0); };
+  Sys.unleashRagnarok = function () {
+    const rt = G.runtime;
+    const s = G.state;
+    if (!rt || rt.rage < CONFIG.RAGE_CAP || !G.village) return false;
+    const d = G.derived;
+    const v = G.village;
+    const dmg = Math.max(v.maxHp * CONFIG.RAGNAROK_DMG_MIN_FRAC, d.crewDps * CONFIG.RAGNAROK_DMG_CREW_SECONDS);
+    v.hp -= dmg;
+    v.hitFlash = 1;
+    rt.rage = 0;
+    rt.ragBuff = CONFIG.RAGNAROK_BUFF_S;
+    rt.flash = Math.max(rt.flash || 0, 0.85);
+    if (G.fx) G.fx.ragnarok();
+    if (s.settings.haptics && navigator.vibrate) navigator.vibrate([20, 40, 30, 60]);
+    G.emit("ragnarok");
+    if (v.hp <= 0) Sys.clearVillage();
+    return true;
+  };
+
   // --- Crew / defense simulation tick ------------------------------
   Sys.tick = function (dt) {
     if (G.paused) return;
@@ -481,6 +515,7 @@
       if (rt.bossBanner > 0) rt.bossBanner = Math.max(0, rt.bossBanner - dt);
       if (rt.regionWipe > 0) rt.regionWipe = Math.max(0, rt.regionWipe - dt);
       if (rt.flash > 0) rt.flash = Math.max(0, rt.flash - dt);
+      if (rt.ragBuff > 0) rt.ragBuff = Math.max(0, rt.ragBuff - dt);
       // combo decay
       if (rt.combo > 0) {
         rt.comboTimer -= dt;
@@ -509,17 +544,34 @@
       crewDps *= 1.6;
       interval *= 0.5;
     }
-    const crewDmg = crewDps * dt;
+    let crewDmg = crewDps * dt;
+    if (rt.ragBuff > 0) crewDmg *= CONFIG.RAGNAROK_BUFF_MULT;
+    if (v.isBoss && v.stagger > 0) crewDmg *= CONFIG.BOSS_STAGGER_DMG_MULT;
     if (crewDmg > 0) {
       v.hp -= crewDmg;
       v.hitFlash = Math.min(1, v.hitFlash + 0.4);
     }
 
-    // enemy defense drains the longship
+    // boss fury / stagger mechanic: below 35% HP it staggers (bonus damage
+    // window), then enrages (defenses hit far harder)
+    if (v.isBoss) {
+      const frac = Math.max(0, v.hp / v.maxHp);
+      if (!v.staggered && !v.fury && frac <= CONFIG.BOSS_FURY_HP_FRAC) {
+        v.stagger = CONFIG.BOSS_STAGGER_S;
+        v.staggered = true;
+        G.emit("bossStagger", v);
+      }
+      if (v.stagger > 0) {
+        v.stagger = Math.max(0, v.stagger - dt);
+        if (v.stagger === 0 && !v.fury) { v.fury = true; G.emit("bossFury", v); }
+      }
+    }
+
+    // enemy defense drains the longship (fury hits much harder)
     const shielded = s.abilities.shield.activeLeft > 0;
     if (!shielded) {
-      const dmg = v.dps * dt;
-      s.shipHp -= dmg;
+      const furyMult = v.fury ? CONFIG.BOSS_FURY_DPS_MULT : 1;
+      s.shipHp -= v.dps * furyMult * dt;
     }
 
     // durability regen
@@ -527,12 +579,9 @@
       s.shipHp = Math.min(d.shipMaxHp, s.shipHp + d.regenFrac * d.shipMaxHp * dt);
     }
 
-    // retreat condition
-    if (s.shipHp <= 0) {
-      Sys.onRetreat();
-    } else if (v.hp <= 0) {
-      Sys.clearVillage();
-    }
+    // retreat / clear
+    if (s.shipHp <= 0) Sys.onRetreat();
+    else if (v.hp <= 0) Sys.clearVillage();
   };
 
   // --- Clear current village ---------------------------------------
@@ -557,6 +606,7 @@
     if (G.runtime) {
       G.runtime.hitstop = Math.max(G.runtime.hitstop, wasBoss ? CONFIG.HITSTOP_BOSS_MS / 1000 : CONFIG.HITSTOP_CLEAR_MS / 1000);
       G.runtime.flash = wasBoss ? 0.55 : 0.25;
+      G.runtime.rage = Math.min(CONFIG.RAGE_CAP, G.runtime.rage + (wasBoss ? CONFIG.RAGE_PER_BOSS : CONFIG.RAGE_PER_CLEAR));
     }
 
     // daily quest tracking

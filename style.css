@@ -149,6 +149,10 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; ba
 .ab-btn.locked { opacity: 0.45; filter: grayscale(0.6); }
 .ab-btn.ready { border-color: var(--gold-bright); animation: abPulse 1.4s infinite; }
 .ab-btn.active { border-color: var(--blood-bright); box-shadow: 0 0 18px var(--blood-bright); }
+.ab-btn.rag { background: radial-gradient(circle at 50% 35%, #3a1a12, #14181f); border-color: #8a4a2a; border-width: 2px; }
+.ab-btn.rag .ab-icon { font-size: 26px; }
+.ab-btn.rag.ready { border-color: var(--gold-bright); animation: abPulse 0.7s infinite; }
+.ab-btn.rag.active { border-color: #ff8a3c; box-shadow: 0 0 22px #ff8a3c; }
 @keyframes abPulse { 0%,100% { box-shadow: 0 0 6px rgba(255,216,112,0.4); } 50% { box-shadow: 0 0 18px rgba(255,216,112,0.9); } }
 
 /* ===================== PANEL ===================== */

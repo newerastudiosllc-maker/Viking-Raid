@@ -268,6 +268,32 @@
       { id: "combo_50",   name: "Fury Unleashed",       icon: "⚡", desc: "Reach a 50-hit combo.",           check: (s) => (s.totals.maxCombo || 0) >= 50, reward: { runes: 12 } },
     ],
 
+    // --- Village modifiers (per-fight affixes; hp/dps/gold/xp are multipliers) ---
+    MODIFIERS: [
+      { id: "none",        name: "Placid",       icon: "🕊️", hp: 1.0,  dps: 1.0,  gold: 1.0,  xp: 1.0,  weight: 0,  desc: "No special traits." },
+      { id: "wealthy",     name: "Wealthy",      icon: "💰", hp: 1.0,  dps: 1.0,  gold: 1.7,  xp: 1.2,  weight: 14, desc: "+70% gold plundered." },
+      { id: "golden",      name: "Golden",       icon: "✨", hp: 1.0,  dps: 1.0,  gold: 2.6,  xp: 1.0,  weight: 4,  desc: "+160% gold plundered." },
+      { id: "stalwart",    name: "Stalwart",     icon: "🛡️", hp: 2.3,  dps: 1.0,  gold: 1.5,  xp: 1.4,  weight: 10, desc: "Fortified: +130% HP, +50% gold." },
+      { id: "frenzy",      name: "Frenzied",     icon: "🔥", hp: 0.85, dps: 2.0,  gold: 1.4,  xp: 1.2,  weight: 9,  desc: "Defenses strike twice as hard." },
+      { id: "bloodthirsty",name: "Bloodthirsty", icon: "🩸", hp: 1.1,  dps: 1.7,  gold: 1.6,  xp: 1.3,  weight: 7,  desc: "Lethal defenses, rich plunder." },
+      { id: "hexed",       name: "Hexed",        icon: "🔮", hp: 1.0,  dps: 1.0,  gold: 2.0,  xp: 1.6,  weight: 6,  crit: false, desc: "Crits disabled — but +100% gold." },
+      { id: "swift",       name: "Swift",        icon: "💨", hp: 0.8,  dps: 1.45, gold: 1.25, xp: 1.1,  weight: 8,  desc: "Fast and fierce raiders." },
+      { id: "plagued",     name: "Plagued",      icon: "☠️", hp: 1.35, dps: 1.35, gold: 1.7,  xp: 1.4,  weight: 6,  desc: "Tough and toxic." },
+      { id: "raging",      name: "Raging",       icon: "😡", hp: 1.2,  dps: 2.2,  gold: 1.9,  xp: 1.5,  weight: 3,  desc: "Enraged defenders, fat loot." },
+    ],
+    MODIFIER_BY_ID: {},
+    rollModifier(region, isBoss, rng) {
+      const r = rng || Math.random;
+      let chance = Math.min(CONFIG.MODIFIER_CHANCE_CAP, CONFIG.MODIFIER_CHANCE_BASE + region * CONFIG.MODIFIER_CHANCE_PER_REGION);
+      if (isBoss && CONFIG.MODIFIER_BOSS_ALWAYS) chance = 1;
+      if (r() > chance) return DATA.MODIFIERS[0];
+      const pool = DATA.MODIFIERS.filter((m) => m.weight > 0);
+      let total = 0; pool.forEach((m) => (total += m.weight));
+      let roll = r() * total;
+      for (let i = 0; i < pool.length; i++) { roll -= pool[i].weight; if (roll <= 0) return pool[i]; }
+      return pool[pool.length - 1];
+    },
+
     // --- Daily quest templates ---------------------------------------
     // goal: fixed, or 0 => computed dynamically from player economy
     DAILY_POOL: [
@@ -343,6 +369,7 @@
   // build lookup maps
   DATA.AFFIXES.forEach((a) => (DATA.AFFIX_BY_ID[a.id] = a));
   DATA.SLOTS.forEach((s) => (DATA.SLOT_BY_ID[s.id] = s));
+  DATA.MODIFIERS.forEach((m) => (DATA.MODIFIER_BY_ID[m.id] = m));
 
   global.DATA = DATA;
 })(typeof window !== "undefined" ? window : this);
