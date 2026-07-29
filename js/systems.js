@@ -129,6 +129,11 @@
     s.loot.inventory.push(item);
     s.loot.totalDrops++;
     if (item.rarity > s.loot.bestRarity) s.loot.bestRarity = item.rarity;
+    // auto-equip if enabled and the new item beats what's equipped
+    if (s.settings.autoEquip) {
+      const cur = s.loot.equipped[item.slot];
+      if (!cur || Sys.itemPower(item) > Sys.itemPower(cur)) Sys.equipItem(item.uid);
+    }
   }
 
   Sys.sellValue = function (it) {
@@ -214,6 +219,7 @@
     s.loot.runes -= cost.runes;
     s.gold -= cost.gold;
     it.level++;
+    if (it.level > s.loot.bestEnchant) s.loot.bestEnchant = it.level;
     G.dirty = true; Sys.syncShipHp();
     Sys.daily("enchants", 1);
     G.emit("loot"); G.emit("enchant", it);
@@ -382,12 +388,29 @@
   Sys.init = function (state) {
     G.state = state;
     G.dirty = true;
+    G.runtime = {
+      combo: 0, comboTimer: 0, lastTap: 0, maxCombo: state.totals.maxCombo || 0,
+      hitstop: 0, bossBanner: 0, regionWipe: 0, flash: 0, lastRegion: state.region,
+    };
     ensureDerived();
     if (state.shipHp < 0 || state.shipHp > G.derived.shipMaxHp) {
       state.shipHp = G.derived.shipMaxHp;
     }
-    G.village = Sys.genVillage(state.region, state.villageIndex);
+    Sys.setVillage(state.region, state.villageIndex);
     Sys.dailyRollover();
+  };
+
+  // Generate + assign the active village, triggering boss/region FX flags
+  Sys.setVillage = function (region, index) {
+    const prevRegion = G.runtime ? G.runtime.lastRegion : region;
+    const v = Sys.genVillage(region, index);
+    G.village = v;
+    if (G.runtime) {
+      G.runtime.lastRegion = region;
+      if (v.isBoss) G.runtime.bossBanner = 1.5;
+      if (region !== prevRegion) G.runtime.regionWipe = 0.7;
+    }
+    return v;
   };
 
   // --- Current max ship HP accessor (used after recompute) ---------
@@ -403,7 +426,16 @@
     const d = ensureDerived();
     const s = G.state;
     const v = G.village;
-    let dmg = d.tapDmg;
+    const rt = G.runtime;
+
+    // combo build
+    rt.combo += 1;
+    rt.comboTimer = CONFIG.COMBO_WINDOW_MS / 1000;
+    rt.lastTap = performance.now();
+    if (rt.combo > rt.maxCombo) { rt.maxCombo = rt.combo; s.totals.maxCombo = rt.maxCombo; }
+    const comboMult = Math.min(CONFIG.COMBO_MULT_CAP, 1 + rt.combo * CONFIG.COMBO_MULT_PER_HIT);
+
+    let dmg = d.tapDmg * comboMult;
     if (s.abilities.berserk.activeLeft > 0) dmg *= CONFIG.ABILITIES.berserk.mult;
     let crit = Math.random() < d.critChance || s.abilities.valkyrie.activeLeft > 0;
     if (crit) dmg *= d.critMult;
@@ -416,16 +448,45 @@
     if (crit) s.totals.crits++;
     Sys.daily("taps", 1);
 
-    if (G.fx) G.fx.tapImpact(px, py, dmg, crit);
+    if (G.fx) G.fx.tapImpact(px, py, dmg, crit, rt.combo);
     if (s.settings.haptics && navigator.vibrate) {
       navigator.vibrate(crit ? 22 : 8);
     }
+    // combo milestone flourish
+    if (rt.combo > 0 && rt.combo % CONFIG.COMBO_MILESTONE === 0 && G.fx) {
+      G.fx.comboBurst(rt.combo);
+      if (global.SFX && global.SFX.combo) global.SFX.combo(rt.combo);
+    }
+    if (crit && G.runtime) G.runtime.hitstop = Math.max(G.runtime.hitstop, CONFIG.HITSTOP_CRIT_MS / 1000);
     if (v.hp <= 0) Sys.clearVillage();
+  };
+
+  Sys.comboMult = function () {
+    const rt = G.runtime;
+    if (!rt || rt.combo <= 0) return 1;
+    return Math.min(CONFIG.COMBO_MULT_CAP, 1 + rt.combo * CONFIG.COMBO_MULT_PER_HIT);
   };
 
   // --- Crew / defense simulation tick ------------------------------
   Sys.tick = function (dt) {
     if (G.paused) return;
+    const rt = G.runtime;
+    // hit-stop: freeze simulation briefly for impact weight
+    if (rt && rt.hitstop > 0) {
+      rt.hitstop = Math.max(0, rt.hitstop - dt);
+      return;
+    }
+    // decay transient FX timers
+    if (rt) {
+      if (rt.bossBanner > 0) rt.bossBanner = Math.max(0, rt.bossBanner - dt);
+      if (rt.regionWipe > 0) rt.regionWipe = Math.max(0, rt.regionWipe - dt);
+      if (rt.flash > 0) rt.flash = Math.max(0, rt.flash - dt);
+      // combo decay
+      if (rt.combo > 0) {
+        rt.comboTimer -= dt;
+        if (rt.comboTimer <= 0) rt.combo = 0;
+      }
+    }
     const d = ensureDerived();
     const s = G.state;
     const v = G.village;
@@ -492,6 +553,12 @@
     const wasBoss = v.isBoss;
     if (wasBoss) s.totals.bosses++;
 
+    // impact feedback
+    if (G.runtime) {
+      G.runtime.hitstop = Math.max(G.runtime.hitstop, wasBoss ? CONFIG.HITSTOP_BOSS_MS / 1000 : CONFIG.HITSTOP_CLEAR_MS / 1000);
+      G.runtime.flash = wasBoss ? 0.55 : 0.25;
+    }
+
     // daily quest tracking
     Sys.daily("raids", 1);
     Sys.daily("gold", goldGain);
@@ -527,7 +594,7 @@
     }
 
     Sys.checkLevel();
-    G.village = Sys.genVillage(reg, idx);
+    Sys.setVillage(reg, idx);
   };
 
   // --- Retreat (longship overwhelmed) ------------------------------
@@ -727,4 +794,77 @@
 
   // expose helpers
   Sys.ensureDerived = ensureDerived;
+
+  // ===========================================================
+  //  ACHIEVEMENTS
+  // ===========================================================
+  Sys.checkAchievements = function () {
+    const s = G.state;
+    const have = {};
+    s.achievements.forEach(function (id) { have[id] = true; });
+    const newly = [];
+    DATA.ACHIEVEMENTS.forEach(function (a) {
+      if (have[a.id]) return;
+      try {
+        if (a.check(s)) {
+          s.achievements.push(a.id);
+          newly.push(a);
+          const r = a.reward || {};
+          if (r.shards) s.saga.shards += r.shards;
+          if (r.runes) { s.loot.runes += r.runes; s.loot.totalRunes += r.runes; }
+          if (r.goldFactor) {
+            const g = Math.ceil(F.villageGold(s.region, 0) * r.goldFactor);
+            s.gold += g; s.totals.goldEarned += g;
+          }
+        }
+      } catch (e) {}
+    });
+    if (newly.length) G.emit("achievements", newly);
+    return newly;
+  };
+  Sys.isUnlocked = function (id) { return G.state.achievements.indexOf(id) >= 0; };
+
+  // ===========================================================
+  //  QUALITY OF LIFE
+  // ===========================================================
+  Sys.autoEquipBest = function () {
+    const s = G.state;
+    let changed = 0;
+    DATA.SLOTS.forEach(function (sl) {
+      let best = null;
+      s.loot.inventory.forEach(function (it) {
+        if (it.slot === sl.id && (!best || Sys.itemPower(it) > Sys.itemPower(best))) best = it;
+      });
+      const cur = s.loot.equipped[sl.id];
+      if (best && (!cur || Sys.itemPower(best) > Sys.itemPower(cur))) {
+        Sys.equipItem(best.uid); changed++;
+      }
+    });
+    return changed;
+  };
+
+  Sys.salvageBelowRarity = function (maxRarity) {
+    const s = G.state;
+    let runes = 0, count = 0;
+    for (let i = s.loot.inventory.length - 1; i >= 0; i--) {
+      if (s.loot.inventory[i].rarity < maxRarity) {
+        const it = s.loot.inventory.splice(i, 1)[0];
+        runes += Sys.salvageValue(it); count++;
+      }
+    }
+    if (count) { s.loot.runes += runes; s.loot.totalRunes += runes; G.emit("loot"); }
+    return { runes: runes, count: count };
+  };
+
+  Sys.applyStatPreset = function (w) {
+    const s = G.state;
+    const keys = ["str", "led", "vit", "fot"].filter(function (k) { return (w[k] || 0) > 0; });
+    if (!keys.length || s.unspentStatPoints <= 0) return 0;
+    let n = 0, i = 0;
+    while (s.unspentStatPoints > 0 && i < 100000) {
+      if (Sys.allocStat(keys[i % keys.length])) n++;
+      i++;
+    }
+    return n;
+  };
 })(typeof window !== "undefined" ? window : this);

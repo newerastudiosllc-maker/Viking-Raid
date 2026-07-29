@@ -399,6 +399,61 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 12px 0;
 .dq-claim.disabled { background: var(--iron); color: var(--muted); }
 .dq-claim.done { background: rgba(95,209,122,0.15); color: var(--green); }
 
+/* ===================== AAA POLISH EXTRAS ===================== */
+.icon-btn.small { width: 30px; height: 30px; font-size: 16px; }
+
+/* stat presets */
+.preset-row { display: flex; gap: 6px; margin: 8px 2px; flex-wrap: wrap; }
+.preset-btn {
+  flex: 1 1 auto; padding: 8px 6px; border-radius: 9px; font-weight: 800; font-size: 11px;
+  background: var(--iron); border: 1px solid var(--iron-light); color: var(--parchment);
+}
+.preset-btn:active { transform: scale(0.96); }
+
+/* loot tools */
+.loot-tools { display: flex; gap: 6px; margin: 8px 0 4px; flex-wrap: wrap; }
+.lt-btn {
+  flex: 1 1 auto; min-width: 80px; padding: 8px 6px; border-radius: 9px; font-weight: 700; font-size: 10px; text-align: center;
+  background: var(--iron); border: 1px solid var(--iron-light); color: var(--text);
+}
+.lt-btn.active { background: linear-gradient(180deg, rgba(95,209,122,0.25), rgba(95,209,122,0.08)); border-color: var(--green); color: var(--green); }
+.lt-btn b { color: var(--gold-bright); }
+
+/* achievements */
+.ach-count { font-size: 12px; color: var(--muted); font-weight: 700; }
+.ach-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.ach { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 11px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+.ach.done { background: linear-gradient(180deg, rgba(232,185,78,0.12), rgba(232,185,78,0.02)); border-color: rgba(232,185,78,0.4); }
+.ach-icon { font-size: 22px; width: 34px; text-align: center; }
+.ach:not(.done) .ach-icon { opacity: 0.5; filter: grayscale(1); }
+.ach-body { flex: 1; min-width: 0; }
+.ach-name { font-weight: 800; font-size: 13px; color: var(--text); }
+.ach.done .ach-name { color: var(--gold-bright); }
+.ach-desc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.ach-reward { font-size: 10px; color: var(--gold-soft); white-space: nowrap; text-align: right; }
+
+/* onboarding */
+.onboarding {
+  position: fixed; inset: 0; z-index: 150; display: none;
+  align-items: center; justify-content: center; padding: 24px;
+  background: rgba(4,6,10,0.82); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.onboarding.show { display: flex; animation: fadeIn 0.25s; }
+.ob-card {
+  width: 100%; max-width: 340px; text-align: center;
+  background: var(--panel-solid); border: 2px solid var(--gold-soft); border-radius: 18px; padding: 24px 20px 16px;
+  box-shadow: var(--shadow);
+}
+.ob-icon { font-size: 52px; margin-bottom: 8px; animation: floaty 3s ease-in-out infinite; }
+.ob-card h3 { font-family: "Cinzel", serif; color: var(--gold-bright); margin: 0 0 8px; font-size: 20px; }
+.ob-card p { color: var(--parchment); font-size: 14px; line-height: 1.5; margin: 0 0 16px; }
+.ob-actions { display: flex; gap: 8px; }
+.ob-actions .btn-ghost { margin: 0; }
+.ob-actions .btn-primary { margin: 0; }
+.ob-dots { display: flex; justify-content: center; gap: 6px; margin-top: 14px; }
+.ob-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--iron-light); }
+.ob-dot.on { background: var(--gold-bright); box-shadow: 0 0 6px var(--gold-bright); }
+
 /* wider screens: center the phone frame */
 @media (min-width: 560px) {
   body { background: #05070c; }

@@ -71,6 +71,7 @@
       else SFX.clear();
     });
     G.on("levelup", function (lvl) {
+      if (G.fx) G.fx.levelUp();
       SFX.level();
       UI.toast("⭐ Level " + lvl + "! +" + CONFIG.STAT_POINTS_PER_LEVEL + " stat points");
       UI.refreshHero();
@@ -93,6 +94,14 @@
       UI.toast("📜 New daily Saga quests available!", 2800);
     });
     G.on("dailyClaim", function () { SFX.level(); });
+    G.on("achievements", function (list) {
+      SFX.achievement();
+      list.forEach(function (a) {
+        UI.toast(a.icon + " Achievement: " + a.name + "!", 2800);
+      });
+      UI.refreshAchievements && UI.refreshAchievements();
+      UI.refreshHero();
+    });
     G.on("loot", function () { UI.refreshLoot && UI.refreshLoot(); });
     G.on("enchant", function () { SFX.upgrade(); });
     G.on("stat", function () { UI.refreshHero(); });
@@ -119,7 +128,10 @@
       Render.frame(dtMs);
     }
     frameCount++;
-    if (frameCount % 120 === 0) Sys.dailyRollover(); // detect midnight while playing
+    if (frameCount % 120 === 0) {
+      Sys.dailyRollover();      // detect midnight while playing
+      Sys.checkAchievements();  // unlock milestone rewards
+    }
     UI.update();
     requestAnimationFrame(loop);
   }

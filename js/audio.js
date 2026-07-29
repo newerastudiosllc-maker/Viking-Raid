@@ -89,4 +89,68 @@
       setTimeout(function () { tone(f, 0.3, "triangle", 0.2); }, i * 90);
     });
   };
+  SFX.combo = function (combo) {
+    const base = 400 + Math.min(900, combo * 8);
+    tone(base, 0.09, "triangle", 0.12, base * 1.5);
+  };
+  SFX.achievement = function () {
+    [659, 880, 1175].forEach(function (f, i) {
+      setTimeout(function () { tone(f, 0.2, "triangle", 0.18); }, i * 80);
+    });
+  };
+
+  // ---- Generative ambient music -----------------------------------
+  const Music = (global.Music = {});
+  let musicOn = false;
+  let musicNodes = null;
+  let musicTimer = null;
+
+  Music.setEnabled = function (on) {
+    if (on === musicOn) return;
+    if (on) Music.start(); else Music.stop();
+  };
+  Music.start = function () {
+    const c = ac();
+    if (!c || musicNodes) { musicOn = !!musicNodes; return; }
+    musicOn = true;
+    const mg = c.createGain();
+    mg.gain.value = 0.0001;
+    mg.connect(master);
+    const o1 = c.createOscillator(); o1.type = "sawtooth"; o1.frequency.value = 55;
+    const o2 = c.createOscillator(); o2.type = "sawtooth"; o2.frequency.value = 82.5; o2.detune.value = 7;
+    const f = c.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 380; f.Q.value = 5;
+    const og = c.createGain(); og.gain.value = 0.16;
+    o1.connect(f); o2.connect(f); f.connect(og); og.connect(mg);
+    const lfo = c.createOscillator(); lfo.frequency.value = 0.07;
+    const lfoG = c.createGain(); lfoG.gain.value = 170;
+    lfo.connect(lfoG); lfoG.connect(f.frequency);
+    o1.start(); o2.start(); lfo.start();
+    mg.gain.linearRampToValueAtTime(0.15, c.currentTime + 3);
+    musicNodes = { mg: mg, o1: o1, o2: o2, lfo: lfo };
+    musicTimer = setInterval(function () { if (Math.random() < 0.5) playBell(c, mg); }, 4400);
+  };
+  function playBell(c, dest) {
+    const notes = [220, 277.18, 329.63, 440, 554.37];
+    const n = notes[Math.floor(Math.random() * notes.length)];
+    const o = c.createOscillator(); o.type = "sine"; o.frequency.value = n;
+    const g = c.createGain(); g.gain.value = 0.0001;
+    o.connect(g); g.connect(dest);
+    const t = c.currentTime;
+    g.gain.linearRampToValueAtTime(0.06, t + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 3);
+    o.start(t); o.stop(t + 3.2);
+  }
+  Music.stop = function () {
+    musicOn = false;
+    if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+    if (musicNodes) {
+      try {
+        const c = ac();
+        musicNodes.mg.gain.linearRampToValueAtTime(0.0001, c.currentTime + 0.6);
+        const n = musicNodes;
+        setTimeout(function () { try { n.o1.stop(); n.o2.stop(); n.lfo.stop(); } catch (e) {} }, 800);
+      } catch (e) {}
+      musicNodes = null;
+    }
+  };
 })(typeof window !== "undefined" ? window : this);

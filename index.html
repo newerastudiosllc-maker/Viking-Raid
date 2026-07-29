@@ -75,8 +75,10 @@
     <!-- HERO -->
     <div id="panelHero" class="panel-pane">
       <div class="panel-head"><h2>🧔 Chieftain</h2>
-        <span id="unspentPts" class="unspent">0 pts</span></div>
+        <span id="unspentPts" class="unspent">0 pts</span>
+        <button id="achBtn" class="icon-btn small" aria-label="Achievements">🏆</button></div>
       <div id="statList" class="list"></div>
+      <div id="presetRow" class="preset-row"></div>
       <h3 class="sub-head">Battle Stats</h3>
       <div id="derivedStats" class="ds-grid"></div>
       <h3 class="sub-head">Abilities</h3>
@@ -88,6 +90,11 @@
         <span class="res-mini">🔮 <span id="lootRunes">0</span> runes</span></div>
       <div id="equipSlots" class="equip-slots"></div>
       <div id="itemDetail" class="item-detail"></div>
+      <div class="loot-tools">
+        <button id="ltAutoEquip" class="lt-btn">⬆ Auto-Equip Best</button>
+        <button id="ltSalvage" class="lt-btn">♻ Salvage &lt; Rare</button>
+        <button id="ltAutoToggle" class="lt-btn">🔁 Auto-equip new: <b id="ltAutoState">Off</b></button>
+      </div>
       <h3 class="sub-head">Inventory (<span id="invCount">0</span>/<span id="invCap">40</span>)</h3>
       <div id="invList" class="inv-list"></div>
     </div>
@@ -130,11 +137,35 @@
     </div>
   </div>
 
+  <!-- ===================== ACHIEVEMENTS MODAL ===================== -->
+  <div id="modalAchievements" class="modal">
+    <div class="modal-card">
+      <h2>🏆 Achievements <span id="achCount" class="ach-count"></span></h2>
+      <div id="achList" class="ach-list"></div>
+      <button id="achClose" class="btn-primary">Close</button>
+    </div>
+  </div>
+
+  <!-- ===================== ONBOARDING ===================== -->
+  <div id="onboarding" class="onboarding">
+    <div class="ob-card">
+      <div id="obIcon" class="ob-icon">⚔️</div>
+      <h3 id="obTitle">Welcome, Jarl!</h3>
+      <p id="obText">Tap the village to raid it.</p>
+      <div class="ob-actions">
+        <button id="obSkip" class="btn-ghost">Skip</button>
+        <button id="obNext" class="btn-primary">Got it</button>
+      </div>
+      <div id="obDots" class="ob-dots"></div>
+    </div>
+  </div>
+
   <!-- ===================== MODALS ===================== -->
   <div id="modalSettings" class="modal">
     <div class="modal-card">
       <h2>⚙ Settings</h2>
       <button id="setSfx" class="toggle">🔊 Sound</button>
+      <button id="setMusic" class="toggle">🎵 Music</button>
       <button id="setHaptics" class="toggle">📳 Haptics</button>
       <button id="setFx" class="toggle">✨ Full Effects</button>
       <hr />

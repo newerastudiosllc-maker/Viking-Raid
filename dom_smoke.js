@@ -179,6 +179,43 @@ check("daily modal open + claim", () => {
   window.UI.closeModal("modalDaily");
 });
 
+check("achievements modal renders list", () => {
+  doc.getElementById("achBtn").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (!doc.getElementById("modalAchievements").classList.contains("show")) throw new Error("not shown");
+  if (!doc.querySelector("#achList .ach")) throw new Error("no items");
+  window.UI.closeModal("modalAchievements");
+});
+
+check("onboarding coach shows + advances", () => {
+  G().state.onboarding.dismissed = false;
+  window.OB.show();
+  if (!doc.getElementById("onboarding").classList.contains("show")) throw new Error("not shown");
+  doc.getElementById("obNext").dispatchEvent(new window.Event("click", { bubbles: true }));
+  window.OB.skip();
+  if (doc.getElementById("onboarding").classList.contains("show")) throw new Error("did not dismiss");
+});
+
+check("loot auto-equip toggle flips", () => {
+  const before = G().state.settings.autoEquip;
+  doc.getElementById("ltAutoToggle").dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (G().state.settings.autoEquip === before) throw new Error("did not toggle");
+});
+
+check("stat preset allocates points", () => {
+  click('#tabs .tab[data-tab="hero"]');
+  G().state.unspentStatPoints = 9;
+  const strBefore = G().state.stats.str;
+  doc.querySelector('.preset-btn[data-preset="tap"]').dispatchEvent(new window.Event("click", { bubbles: true }));
+  if (G().state.unspentStatPoints !== 0 || G().state.stats.str <= strBefore) throw new Error("preset failed");
+});
+
+check("combo builds on repeated taps", () => {
+  click('#tabs .tab[data-tab="raid"]');
+  const stage = doc.getElementById("stage");
+  for (let i = 0; i < 5; i++) stage.dispatchEvent(new window.Event("pointerdown", { bubbles: true }));
+  if (G().runtime.combo < 5) throw new Error("combo not built (got " + G().runtime.combo + ")");
+});
+
 driveFrames(10);
 
 console.log("\n== CHECKS ==");

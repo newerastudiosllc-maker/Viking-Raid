@@ -34,8 +34,15 @@
       equipSlots: $("equipSlots"), itemDetail: $("itemDetail"),
       invList: $("invList"), invCount: $("invCount"), invCap: $("invCap"),
       lootRunes: $("lootRunes"),
+      ltAutoEquip: $("ltAutoEquip"), ltSalvage: $("ltSalvage"),
+      ltAutoToggle: $("ltAutoToggle"), ltAutoState: $("ltAutoState"),
+      presetRow: $("presetRow"),
+      achBtn: $("achBtn"), modalAchievements: $("modalAchievements"),
+      achList: $("achList"), achCount: $("achCount"), achClose: $("achClose"),
       dailyBtn: $("dailyBtn"), modalDaily: $("modalDaily"),
       dailyList: $("dailyList"), dailyStreak: $("dailyStreak"), dailyClose: $("dailyClose"),
+      onboarding: $("onboarding"), obIcon: $("obIcon"), obTitle: $("obTitle"),
+      obText: $("obText"), obNext: $("obNext"), obSkip: $("obSkip"), obDots: $("obDots"),
       unspent: $("unspentPts"), statList: $("statList"),
       derivedStats: $("derivedStats"), abilityInfo: $("abilityInfo"),
       sagaGain: $("sagaGain"), sagaBtn: $("sagaPrestige"),
@@ -75,6 +82,20 @@
     // daily quests
     el.dailyBtn.addEventListener("click", function () { Sys.dailyRollover(); UI.refreshDailies(); UI.openModal("modalDaily"); });
     el.dailyClose.addEventListener("click", function () { UI.closeModal("modalDaily"); });
+
+    // achievements
+    el.achBtn.addEventListener("click", function () { UI.refreshAchievements(); UI.openModal("modalAchievements"); });
+    el.achClose.addEventListener("click", function () { UI.closeModal("modalAchievements"); });
+
+    // loot QoL
+    el.ltAutoEquip.addEventListener("click", function () { const n = Sys.autoEquipBest(); SFX.upgrade(); UI.toast(n ? "Equipped " + n + " better item" + (n > 1 ? "s" : "") + "." : "Already optimal."); });
+    el.ltSalvage.addEventListener("click", function () { const r = Sys.salvageBelowRarity(2); SFX.upgrade(); UI.toast(r.count ? "Salvaged " + r.count + " for 🔮" + r.runes : "Nothing to salvage."); });
+    el.ltAutoToggle.addEventListener("click", function () { G.state.settings.autoEquip = !G.state.settings.autoEquip; UI.refreshLootTools(); SFX.upgrade(); });
+
+    // onboarding
+    el.obNext.addEventListener("click", function () { OB.next(); });
+    el.obSkip.addEventListener("click", function () { OB.skip(); });
+
     el.invCap.textContent = CONFIG.LOOT_INV_CAP;
 
     buildForge();
@@ -82,11 +103,18 @@
     buildSaga();
     buildAbilities();
     buildEquipSlots();
+    buildPresets();
 
     // settings buttons
     bindSetting("setSfx", "sfx");
     bindSetting("setHaptics", "haptics");
     bindSetting("setFx", "reducedFx");
+    const musicBtn = $("setMusic");
+    if (musicBtn) musicBtn.addEventListener("click", function () {
+      G.state.settings.music = !G.state.settings.music;
+      if (window.Music) Music.setEnabled(G.state.settings.music);
+      UI.refreshSettings();
+    });
     $("setExport").addEventListener("click", UI.doExport);
     $("setImport").addEventListener("click", UI.doImport);
     $("setWipe").addEventListener("click", UI.confirmWipe);
@@ -138,8 +166,10 @@
   // --- Start from splash -------------------------------------------
   UI.startGame = function () {
     SFX.resume();
+    if (window.Music && G.state.settings.music) Music.setEnabled(true);
     el.splash.classList.add("hidden");
     setTimeout(function () { el.splash.style.display = "none"; }, 450);
+    if (window.OB) OB.show();
   };
 
   // --- Build static lists ------------------------------------------
@@ -392,6 +422,7 @@
         UI.refreshLoot();
       });
     });
+    UI.refreshLootTools();
     UI.refreshItemDetail();
   };
 
@@ -488,9 +519,111 @@
     el.dailyBtn.classList.toggle("badge", any);
   }
 
+  // ============================================================
+  //  STAT PRESETS
+  // ============================================================
+  function buildPresets() {
+    if (!el.presetRow) return;
+    const presets = [
+      { id: "tap", label: "⚔️ Tap", w: { str: 2, fot: 1 } },
+      { id: "crew", label: "🪓 Crew", w: { led: 2, fot: 1 } },
+      { id: "tank", label: "🛡️ Tank", w: { vit: 2, led: 1 } },
+      { id: "balanced", label: "⚖️ Balanced", w: { str: 1, led: 1, vit: 1, fot: 1 } },
+    ];
+    let html = "";
+    presets.forEach(function (p) {
+      html += '<button class="preset-btn" data-preset="' + p.id + '">' + p.label + "</button>";
+    });
+    el.presetRow.innerHTML = html;
+    el.presetRow.querySelectorAll("[data-preset]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        const def = presets.find(function (x) { return x.id === b.dataset.preset; });
+        const n = Sys.applyStatPreset(def.w);
+        if (n > 0) { SFX.upgrade(); UI.toast("Allocated " + n + " points (" + def.label + ")."); }
+        else SFX.error();
+        UI.refreshHero();
+      });
+    });
+  }
+
+  // ============================================================
+  //  ACHIEVEMENTS
+  // ============================================================
+  UI.refreshAchievements = function () {
+    const s = G.state;
+    const unlocked = {};
+    s.achievements.forEach(function (id) { unlocked[id] = true; });
+    el.achCount.textContent = s.achievements.length + "/" + DATA.ACHIEVEMENTS.length;
+    let html = "";
+    DATA.ACHIEVEMENTS.forEach(function (a) {
+      const got = !!unlocked[a.id];
+      const rewardTxt = (a.reward.shards ? "💎" + a.reward.shards + " " : "") + (a.reward.runes ? "🔮" + a.reward.runes + " " : "") + (a.reward.goldFactor ? "🪙" : "");
+      html +=
+        '<div class="ach' + (got ? " done" : "") + '">' +
+          '<div class="ach-icon">' + (got ? a.icon : "🔒") + "</div>" +
+          '<div class="ach-body">' +
+            '<div class="ach-name">' + a.name + '</div>' +
+            '<div class="ach-desc">' + a.desc + '</div>' +
+          '</div>' +
+          '<div class="ach-reward">' + rewardTxt + '</div>' +
+        '</div>';
+    });
+    el.achList.innerHTML = html;
+  };
+
+  // ============================================================
+  //  LOOT TOOLS STATE
+  // ============================================================
+  UI.refreshLootTools = function () {
+    if (el.ltAutoState) el.ltAutoState.textContent = G.state.settings.autoEquip ? "On" : "Off";
+    if (el.ltAutoToggle) el.ltAutoToggle.classList.toggle("active", G.state.settings.autoEquip);
+  };
+
+  // ============================================================
+  //  ONBOARDING (first-time coach)
+  // ============================================================
+  const OB = (global.OB = {});
+  OB.steps = [
+    { icon: "⚔️", title: "Raid the Coast", text: "Tap anywhere on the village to strike it. Keep tapping to build a COMBO for big damage!" },
+    { icon: "🪓", title: "Your Warband", text: "Your crew attacks automatically. Watch the Longship bar — if it falls, reinforce with Armor & Rations." },
+    { icon: "🔨", title: "The Forge", text: "Spend plundered gold on upgrades. Tap x1 / x10 / MAX to buy in bulk." },
+    { icon: "🧔", title: "Level Up", text: "Earn XP, then spend stat points in the Hero tab. Unlock powerful Abilities as you grow." },
+    { icon: "🎒", title: "Loot & Runes", text: "Villages and Bosses drop gear. Equip it, salvage the rest for runes, and Enchant your favourites." },
+    { icon: "🌀", title: "Endless Saga", text: "Each region is harder than the last. Reach Region 3 to Set Sail and prestige for permanent power." },
+  ];
+  OB.show = function () {
+    if (!el.onboarding) return;
+    if (G.state.onboarding.dismissed) return;
+    OB.render();
+    el.onboarding.classList.add("show");
+  };
+  OB.render = function () {
+    const step = G.state.onboarding.step || 0;
+    const s = OB.steps[step] || OB.steps[0];
+    el.obIcon.textContent = s.icon;
+    el.obTitle.textContent = s.title;
+    el.obText.textContent = s.text;
+    el.obNext.textContent = step >= OB.steps.length - 1 ? "Begin Raiding" : "Next";
+    let dots = "";
+    for (let i = 0; i < OB.steps.length; i++) dots += '<span class="ob-dot' + (i === step ? " on" : "") + '"></span>';
+    el.obDots.innerHTML = dots;
+  };
+  OB.next = function () {
+    SFX.upgrade();
+    G.state.onboarding.step = (G.state.onboarding.step || 0) + 1;
+    if (G.state.onboarding.step >= OB.steps.length) { OB.skip(); return; }
+    OB.render();
+  };
+  OB.skip = function () {
+    G.state.onboarding.dismissed = true;
+    if (el.onboarding) el.onboarding.classList.remove("show");
+    State.save(G.state);
+  };
+
   UI.refreshSettings = function () {
     const s = G.state.settings;
     $("setSfx").classList.toggle("on", s.sfx);
+    $("setMusic").classList.toggle("on", s.music);
     $("setHaptics").classList.toggle("on", s.haptics);
     $("setFx").classList.toggle("on", !s.reducedFx);
   };

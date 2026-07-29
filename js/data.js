@@ -162,13 +162,27 @@
 
     // --- Regions (first several hand-authored, then procedural) ------
     REGIONS: [
-      { name: "The Frozen Shore",   art: "scene_village",  tint: "#1b2a3a" },
-      { name: "Whispering Fjords",  art: "scene_village",  tint: "#243440" },
-      { name: "Ironwood Forest",    art: "scene_forest",   tint: "#16241a" },
-      { name: "Blackpine Marches",  art: "scene_forest",   tint: "#1a2230" },
-      { name: "Stormhold Keep",     art: "scene_fortress", tint: "#10131f" },
-      { name: "Thunder Cliffs",     art: "scene_fortress", tint: "#0e1322" },
+      { name: "The Frozen Shore",   art: "scene_village",  tint: "#1b2a3a", weather: "snow" },
+      { name: "Whispering Fjords",  art: "scene_village",  tint: "#243440", weather: "mist" },
+      { name: "Ironwood Forest",    art: "scene_forest",   tint: "#16241a", weather: "embers" },
+      { name: "Blackpine Marches",  art: "scene_forest",   tint: "#1a2230", weather: "rain" },
+      { name: "Stormhold Keep",     art: "scene_fortress", tint: "#10131f", weather: "storm" },
+      { name: "Thunder Cliffs",     art: "scene_fortress", tint: "#0e1322", weather: "storm" },
     ],
+
+    // --- Weather profiles (rendered as canvas particles) -------------
+    WEATHER: {
+      clear:  { count: 0,   color: "#ffffff", speed: 0,    wind: 0,    len: 0,  glow: false, lightning: false },
+      mist:   { count: 0,   color: "#ffffff", speed: 0,    wind: 0,    len: 0,  glow: false, lightning: false },
+      rain:   { count: 110, color: "#9fd0ff", speed: 1.7,  wind: 0.55, len: 16, glow: false, lightning: false },
+      snow:   { count: 80,  color: "#ffffff", speed: 0.55, wind: 0.22, len: 0,  glow: true,  lightning: false },
+      embers: { count: 60,  color: "#ff9a3c", speed: -0.5, wind: -0.3, len: 0,  glow: true,  lightning: false },
+      storm:  { count: 150, color: "#9fb8d8", speed: 2.1,  wind: 0.9,  len: 22, glow: false, lightning: true },
+    },
+    weatherFor(region) {
+      const w = DATA.regionArt(region).weather;
+      return DATA.WEATHER[w] || DATA.WEATHER.clear;
+    },
 
     // --- Procedural village naming ------------------------------------
     NAME_PREFIX: [
@@ -234,6 +248,25 @@
     // Loot name generation
     ITEM_ADJ: ["Ancient", "Frostbound", "Ravensworn", "Iron", "Bloodforged", "Storm", "Wyrm", "Sacred", "Cursed", "Golden", "Shadow", "Wolf", "Bear", "Oak", "Runic", "Sundered"],
     ITEM_SUFFIX: ["the North", "Slumber", "Giants", "the Deep", "Valor", "the Gods", "Thunder", "Winter", "the Hunt", "Endless Fury", "the Forge", "the Void"],
+
+    // --- Achievements (meta milestones with rewards) -----------------
+    // check(s) => boolean; reward: { shards, runes, goldFactor }
+    ACHIEVEMENTS: [
+      { id: "first_raid", name: "First Blood",          icon: "⚔️", desc: "Raid your first village.",        check: (s) => s.totals.raids >= 1,        reward: { goldFactor: 10 } },
+      { id: "raids_50",   name: "Raider",               icon: "🔥", desc: "Raid 50 villages.",               check: (s) => s.totals.raids >= 50,       reward: { runes: 8, goldFactor: 15 } },
+      { id: "raids_500",  name: "Scourge of the Coast", icon: "💀", desc: "Raid 500 villages.",              check: (s) => s.totals.raids >= 500,      reward: { shards: 4 } },
+      { id: "boss_1",     name: "Giantslayer",          icon: "☠️", desc: "Defeat your first Boss Lair.",    check: (s) => s.totals.bosses >= 1,       reward: { runes: 5, goldFactor: 15 } },
+      { id: "boss_10",    name: "Boss Crusher",         icon: "🏔️", desc: "Defeat 10 Boss Lairs.",           check: (s) => s.totals.bosses >= 10,      reward: { shards: 2 } },
+      { id: "region_3",   name: "Beyond the Shore",     icon: "🗺️", desc: "Reach Region 4.",                 check: (s) => s.highestRegion >= 3,       reward: { shards: 3 } },
+      { id: "region_6",   name: "Deep Raider",          icon: "🌊", desc: "Reach Region 7.",                 check: (s) => s.highestRegion >= 6,       reward: { shards: 6 } },
+      { id: "lvl_25",     name: "Seasoned Chieftain",   icon: "⭐", desc: "Reach Level 25.",                 check: (s) => s.level >= 25,             reward: { runes: 15 } },
+      { id: "lvl_50",     name: "Living Legend",        icon: "🌟", desc: "Reach Level 50.",                 check: (s) => s.level >= 50,             reward: { shards: 5 } },
+      { id: "mythic",     name: "Mythic Fortune",       icon: "💎", desc: "Find a Mythic item.",             check: (s) => s.loot.bestRarity >= 5,     reward: { shards: 4 } },
+      { id: "enchant10",  name: "Master Runesmith",     icon: "🔮", desc: "Enchant an item to +10.",         check: (s) => s.loot.bestEnchant >= 10,   reward: { shards: 3 } },
+      { id: "rich",       name: "Dragon's Hoard",       icon: "🪙", desc: "Earn 1,000,000 total gold.",      check: (s) => s.totals.goldEarned >= 1e6, reward: { runes: 20 } },
+      { id: "saga_1",     name: "A New Saga",           icon: "🌀", desc: "Prestige for the first time.",    check: (s) => s.saga.totalEarned > 0,     reward: { shards: 3 } },
+      { id: "combo_50",   name: "Fury Unleashed",       icon: "⚡", desc: "Reach a 50-hit combo.",           check: (s) => (s.totals.maxCombo || 0) >= 50, reward: { runes: 12 } },
+    ],
 
     // --- Daily quest templates ---------------------------------------
     // goal: fixed, or 0 => computed dynamically from player economy

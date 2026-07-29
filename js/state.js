@@ -64,6 +64,7 @@
         bosses: 0,
         taps: 0,
         crits: 0,
+        maxCombo: 0,
       },
       loot: {
         inventory: [],
@@ -72,10 +73,13 @@
         totalRunes: 0,
         totalDrops: 0,
         bestRarity: 0,
+        bestEnchant: 0,
         uid: 1,
       },
+      achievements: [], // unlocked achievement ids
+      onboarding: { step: 0, dismissed: false },
       dailies: null, // generated lazily by Sys.dailyRollover()
-      settings: { sfx: true, haptics: true, reducedFx: false, notifsBoss: true },
+      settings: { sfx: true, haptics: true, reducedFx: false, notifsBoss: true, music: true, autoEquip: false },
       seenIntro: false,
     };
   }
@@ -95,12 +99,15 @@
     });
     out.totals = Object.assign({}, d.totals, s.totals || {});
     out.settings = Object.assign({}, d.settings, s.settings || {});
+    out.achievements = Array.isArray(s.achievements) ? s.achievements : [];
+    out.onboarding = Object.assign({}, d.onboarding, s.onboarding || {});
     // loot
     out.loot = Object.assign({}, d.loot, s.loot || {});
     out.loot.equipped = Object.assign(freshEquipped(), (s.loot && s.loot.equipped) || {});
     out.loot.inventory = Array.isArray(out.loot.inventory) ? out.loot.inventory : [];
     if (typeof out.loot.runes !== "number") out.loot.runes = 0;
     if (typeof out.loot.uid !== "number") out.loot.uid = 1 + out.loot.inventory.length;
+    if (typeof out.loot.bestEnchant !== "number") out.loot.bestEnchant = 0;
     // dailies left as-is (validated/rolled by Sys); ensure object if present
     out.dailies = s.dailies || null;
     if (typeof out.unspentStatPoints !== "number") out.unspentStatPoints = 0;

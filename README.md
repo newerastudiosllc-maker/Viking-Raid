@@ -33,6 +33,18 @@ Every equipment bonus feeds directly back into the derived-stat formulas, so the
 
 ---
 
+## 🎬 Game feel & polish (the AAA pass)
+
+- **Combo system** — rapid taps build a combo meter (up to **3× tap damage**) with an escalating heat display and milestone bursts; rewards active play over pure idle.
+- **Juice** — hit-stop on crits/boss kills, screen shake, coin-and-shard bursts on plunder, a cracking emblem as a target weakens, a dramatic **boss-intro banner**, region-transition wipes, and a golden **level-up shockwave**.
+- **Living world** — each region has its own **weather** (drifting snow, rain, glowing embers, mist, lightning-split storms) rendered as canvas particles.
+- **Onboarding** — a 6-step first-time coach that teaches raiding, the Forge, Hero stats, loot, and prestige.
+- **Achievements** — 14 meta milestones (First Blood, Giantslayer, Mythic Fortune, Living Legend…) with rune/shard/gold rewards and a 🏆 gallery.
+- **Quality of life** — **auto-equip best**, **bulk salvage** below a rarity, **auto-equip new drops**, and one-tap **stat presets** (Tap / Crew / Tank / Balanced).
+- **Generative ambient music** — a procedural Norse drone with bell motifs (WebAudio, no files), plus combo-escalation SFX.
+
+---
+
 ## 🎮 How to play
 
 - **Tap the raid target** to strike it (your Tap Damage). Your **Warband** auto-attacks for continuous DPS.
@@ -75,8 +87,8 @@ python3 -m http.server 8080
 ```bash
 npm install            # pulls jsdom for the DOM test
 npm test               # runs both suites
-#   • test_logic.js  — 34 core-simulation assertions (combat, leveling, upgrades, prestige, offline, save)
-#   • dom_smoke.js   — 18 full-runtime checks in a real DOM (jsdom) with mocked canvas/audio
+#   • test_logic.js  — 60 core-simulation assertions (combat, leveling, upgrades, loot, runes, daily quests, combo, achievements, prestige, offline, save)
+#   • dom_smoke.js   — 27 full-runtime checks in a real DOM (jsdom) with mocked canvas/audio
 ```
 
 ---
@@ -93,7 +105,7 @@ npm install
 npm run build:web
 
 # 3. Generate native icons & splash from assets/icon-1024.png
-npx capacitor-assets generate
+npm install -D @capacitor/assets && npx capacitor-assets generate
 
 # 4. Add the Android platform (creates ./android)
 npx cap add android

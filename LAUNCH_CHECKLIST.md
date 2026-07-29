@@ -50,7 +50,7 @@ Run these in the project root:
 ```bash
 npm install                      # Capacitor + tooling
 npm run build:web                # copies the game into ./www
-npx capacitor-assets generate    # makes Android icons + splash from assets/icon-1024.png
+npx capacitor-assets generate    # makes Android icons + splash from assets/icon-1024.png (run: npm i -D @capacitor/assets first)
 npx cap add android              # creates ./android  (first time only)
 npx cap sync android             # copies ./www + plugins into the native project
 npx cap open android             # opens the project in Android Studio

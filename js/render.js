@@ -19,6 +19,11 @@
   let floaters = [];
   let shakeMag = 0;
   let auraState = { berserk: 0, valkyrie: 0, shield: 0 };
+  let weather = [];
+  let weatherRegion = -1;
+  let lightning = 0;
+  let lightningTimer = 2 + Math.random() * 4;
+  let shockwaves = [];
 
   function loadImage(name, src) {
     const im = new Image();
@@ -77,10 +82,10 @@
   function shake(m) { shakeMag = Math.min(18, shakeMag + m); }
 
   global.G.fx = {
-    tapImpact: function (px, py, dmg, crit) {
+    tapImpact: function (px, py, dmg, crit, combo) {
       const tx = px != null ? px : W / 2;
       const ty = py != null ? py : H * 0.42;
-      spawnFloater(tx, ty, formatNum(dmg) + (crit ? "!" : ""), crit ? "#ffd54a" : "#ffffff", crit);
+      spawnFloater(tx, ty - (combo ? Math.min(40, combo * 0.4) : 0), formatNum(dmg) + (crit ? "!" : ""), crit ? "#ffd54a" : "#ffffff", crit);
       burst(tx, ty, crit ? "#ffd54a" : "#ffb3a0", crit ? 16 : 7);
       ring(tx, ty, crit ? "rgba(255,213,74,0.9)" : "rgba(255,180,160,0.7)");
       if (crit) shake(6); else shake(2);
@@ -88,6 +93,20 @@
     spawnFloater: spawnFloater,
     burst: burst,
     shake: shake,
+    comboBurst: function (combo) {
+      const cx = W / 2, cy = H * 0.42;
+      burst(cx, cy, "#ffd54a", 26);
+      ring(cx, cy, "rgba(255,213,74,0.8)");
+      spawnFloater(cx, cy - 50, "COMBO x" + combo + "!", "#ffd54a", true);
+      shake(5);
+    },
+    levelUp: function () {
+      const cx = W / 2, cy = H * 0.42;
+      shockwaves.push({ x: cx, y: cy, r: 10, life: 1, color: "#ffd870" });
+      burst(cx, cy, "#ffd870", 50);
+      spawnFloater(cx, cy - 70, "LEVEL UP!", "#ffd870", true);
+      shake(8);
+    },
     abilityAura: function (id) {
       if (id === "berserk") auraState.berserk = 1;
       if (id === "valkyrie") auraState.valkyrie = 1;
@@ -102,6 +121,15 @@
     clearBurst: function (boss) {
       const c = boss ? "#ffd54a" : "#9fe8ff";
       for (let i = 0; i < (boss ? 60 : 30); i++) burst(W / 2 + (Math.random() - 0.5) * W * 0.5, H * 0.42 + (Math.random() - 0.5) * 80, c, 1);
+      // coins / shards arc upward with gravity
+      const coins = boss ? 26 : 12;
+      for (let i = 0; i < coins; i++) {
+        sparks.push({
+          x: W / 2 + (Math.random() - 0.5) * 60, y: H * 0.42,
+          vx: (Math.random() - 0.5) * 0.5, vy: -0.4 - Math.random() * 0.4,
+          life: 1.4, color: boss ? "#ffd54a" : "#ffe08a", size: 2.5 + Math.random() * 2, coin: true,
+        });
+      }
       shake(boss ? 14 : 6);
     },
     retreatFx: function () {
@@ -140,6 +168,8 @@
 
     drawBackground();
     drawMist(dt, reduced);
+    rebuildWeather(v ? v.region : 0);
+    drawWeather(dt, reduced);
     drawTarget(v, dt);
     drawShip(dt);
     drawAuras(dt);
@@ -149,10 +179,15 @@
     drawSparks();
     updateRings(dt);
     drawRings();
+    updateShockwaves(dt);
+    drawShockwaves();
 
     // floaters
     updateFloaters(dt);
     drawFloaters();
+
+    // full-screen overlays (on top)
+    drawOverlays(dt);
 
     ctx.restore();
 
@@ -226,6 +261,160 @@
       ctx.fill();
     }
     ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  // ---- Weather (per region) ---------------------------------------
+  function rebuildWeather(region) {
+    if (region === weatherRegion) return;
+    weatherRegion = region;
+    const cfg = DATA.weatherFor(region);
+    weather = [];
+    if (!cfg || cfg.count <= 0) return;
+    for (let i = 0; i < cfg.count; i++) {
+      weather.push({ x: Math.random(), y: Math.random(), v: 0.4 + Math.random() * 0.8, s: 1 + Math.random() * 1.5 });
+    }
+  }
+  function drawWeather(dt, reduced) {
+    if (weatherRegion < 0) return;
+    const cfg = DATA.weatherFor(weatherRegion);
+    if (!cfg || cfg.count <= 0) return;
+    const factor = reduced ? 0.4 : 1;
+    const count = Math.floor(weather.length * factor);
+    ctx.save();
+    ctx.strokeStyle = cfg.color;
+    ctx.fillStyle = cfg.color;
+    ctx.lineWidth = reduced ? 1 : 1.4;
+    for (let i = 0; i < count; i++) {
+      const p = weather[i];
+      p.y += cfg.speed * p.v * dt * 0.9;
+      p.x += cfg.wind * p.v * dt * 0.5;
+      if (p.y > 1.05) { p.y = -0.05; p.x = Math.random(); }
+      if (p.x > 1.05) p.x = -0.05;
+      if (p.x < -0.05) p.x = 1.05;
+      const x = p.x * W, y = p.y * H;
+      if (cfg.len > 0) {
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - cfg.wind * cfg.len, y + cfg.len);
+        ctx.stroke();
+      } else {
+        ctx.globalAlpha = (cfg.glow ? 0.8 : 0.5) * p.s;
+        ctx.beginPath();
+        ctx.arc(x, y, (cfg.glow ? 1.6 : 1.2) * p.s, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    if (cfg.lightning) {
+      lightningTimer -= dt;
+      if (lightningTimer <= 0) { lightning = 0.5; lightningTimer = 3 + Math.random() * 6; }
+      if (lightning > 0) {
+        lightning -= dt * 1.5;
+        ctx.fillStyle = "rgba(200,225,255," + Math.max(0, lightning) * 0.5 + ")";
+        ctx.fillRect(0, 0, W, H);
+      }
+    }
+  }
+
+  // ---- Shockwaves (level-up etc.) ---------------------------------
+  function updateShockwaves(dt) {
+    for (let i = shockwaves.length - 1; i >= 0; i--) {
+      const w = shockwaves[i];
+      w.r += dt * 900;
+      w.life -= dt * 1.4;
+      if (w.life <= 0) shockwaves.splice(i, 1);
+    }
+  }
+  function drawShockwaves() {
+    for (let i = 0; i < shockwaves.length; i++) {
+      const w = shockwaves[i];
+      ctx.globalAlpha = Math.max(0, w.life);
+      ctx.strokeStyle = w.color;
+      ctx.lineWidth = 6 * w.life;
+      ctx.beginPath(); ctx.arc(w.x, w.y, w.r, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---- Full-screen overlays (flash, region wipe, boss banner, combo) ----
+  function drawOverlays(dt) {
+    const rt = G.runtime;
+    const v = G.village;
+    if (!rt) return;
+    if (rt.flash > 0) {
+      ctx.fillStyle = "rgba(255,240,200," + Math.min(0.5, rt.flash * 0.6) + ")";
+      ctx.fillRect(0, 0, W, H);
+    }
+    if (rt.regionWipe > 0) {
+      const a = rt.regionWipe / 0.7;
+      const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.1, W / 2, H / 2, H * 0.8);
+      g.addColorStop(0, "rgba(255,240,200,0)");
+      g.addColorStop(1, "rgba(255,240,200," + a * 0.5 + ")");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
+    if (rt.bossBanner > 0 && v && v.isBoss) {
+      const t = 1.5 - rt.bossBanner;
+      const inP = Math.min(1, t / 0.35);
+      const outP = rt.bossBanner < 0.4 ? rt.bossBanner / 0.4 : 1;
+      const a = Math.min(inP, outP);
+      const slide = (1 - inP) * 60;
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.fillStyle = "rgba(120,10,10," + 0.55 * a + ")";
+      ctx.fillRect(0, H * 0.3 + slide, W, 70);
+      ctx.fillStyle = "#ff5a3c";
+      ctx.fillRect(0, H * 0.3 + slide, W, 3);
+      ctx.fillRect(0, H * 0.3 + 67 + slide, W, 3);
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillStyle = "#ffe9c7";
+      ctx.font = "bold " + Math.max(18, Math.floor(W * 0.06)) + "px 'Cinzel', serif";
+      ctx.fillText("☠  BOSS LAIR  ☠", W / 2, H * 0.3 + 26 + slide);
+      ctx.font = Math.max(11, Math.floor(W * 0.035)) + "px sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.75)";
+      ctx.fillText(v.name, W / 2, H * 0.3 + 50 + slide);
+      ctx.restore();
+    }
+    if (rt.combo > 1) {
+      const mult = Math.min(CONFIG.COMBO_MULT_CAP, 1 + rt.combo * CONFIG.COMBO_MULT_PER_HIT);
+      const cx = W / 2, cy = H * 0.42 + Math.min(W, H) * 0.3;
+      const heat = Math.min(1, rt.combo / 100);
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, rt.combo / 5);
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.font = "bold " + (16 + heat * 10) + "px sans-serif";
+      ctx.fillStyle = heat > 0.6 ? "#ff5a3c" : "#ffd54a";
+      ctx.fillText(rt.combo + " HITS  ·  " + mult.toFixed(2) + "x", cx, cy);
+      const bw = 120, bf = Math.max(0, rt.comboTimer / (CONFIG.COMBO_WINDOW_MS / 1000));
+      ctx.fillStyle = "rgba(255,255,255,0.15)";
+      ctx.fillRect(cx - bw / 2, cy + 14, bw, 4);
+      ctx.fillStyle = heat > 0.6 ? "#ff5a3c" : "#ffd54a";
+      ctx.fillRect(cx - bw / 2, cy + 14, bw * bf, 4);
+      ctx.restore();
+    }
+  }
+
+  // ---- Emblem cracks at low HP ------------------------------------
+  function drawCracks(cx, cy, R, frac) {
+    if (frac > 0.66) return;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.strokeStyle = "rgba(0,0,0,0.55)";
+    ctx.lineWidth = Math.max(1, R * 0.02);
+    const cracks = frac < 0.25 ? 5 : frac < 0.5 ? 3 : 1;
+    for (let i = 0; i < cracks; i++) {
+      const a = (i / cracks) * Math.PI * 2 + 0.3;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      for (let s = 1; s <= 3; s++) {
+        const rr = R * 0.92 * (s / 3);
+        const aa = a + Math.sin(i * 7 + s * 3) * 0.3;
+        ctx.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr);
+      }
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -311,6 +500,7 @@
     ctx.beginPath();
     ctx.arc(cx, cy, R * 1.18, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
     ctx.stroke();
+    drawCracks(cx, cy, R, frac);
 
     // name plate
     ctx.textAlign = "center";
@@ -373,8 +563,9 @@
     const reduced = G.state && G.state.settings.reducedFx;
     for (let i = sparks.length - 1; i >= 0; i--) {
       const p = sparks[i];
-      p.x += p.vx; p.y += p.vy; p.vy += 0.004;
-      p.life -= dt * (reduced ? 3 : 1.6);
+      p.x += p.vx; p.y += p.vy;
+      p.vy += p.coin ? 0.02 : 0.004;
+      p.life -= dt * (reduced ? 3 : p.coin ? 1.1 : 1.6);
       if (p.life <= 0) sparks.splice(i, 1);
     }
   }

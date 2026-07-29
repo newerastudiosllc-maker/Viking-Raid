@@ -147,10 +147,25 @@
     DAILY_QUEST_COUNT: 3,
     DAILY_RESET_UTC: true,         // roll over at UTC midnight (stable globally)
 
+    // --- Combo (rewards active tapping) ------------------------------
+    COMBO_WINDOW_MS: 2200,         // idle time before combo resets
+    COMBO_MULT_PER_HIT: 0.02,      // +2% tap dmg per combo step
+    COMBO_MULT_CAP: 3.0,           // max tap multiplier from combo
+    COMBO_MILESTONE: 25,           // every N hits = pitch escalation + mini-burst
+
+    // --- Juice / game feel -------------------------------------------
+    HITSTOP_CRIT_MS: 45,
+    HITSTOP_BOSS_MS: 80,
+    HITSTOP_LEVELUP_MS: 110,
+    HITSTOP_CLEAR_MS: 35,
+    SCREEN_SHAKE_DECAY: 0.84,      // overrides earlier default below
+
+    // --- Achievements ------------------------------------------------
+    ACHIEVEMENT_CHECK_INTERVAL_S: 2,
+
     // --- Misc / feel --------------------------------------------------
     FLOATER_LIFE_MS: 850,
     MAX_FLOATERS: 60,
-    SCREEN_SHAKE_DECAY: 0.86,
     HAPTICS: true,
   };
 
