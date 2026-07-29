@@ -149,6 +149,8 @@ Viking-Raid/
 ├─ assets/                  # AI-generated art — runtime scenes (6 regions + boss lair,
 │                           #   hero, logo, PWA icons) + packaging sources
 │                           #   (icon-only/foreground/background, splash, splash-dark)
+├─ assets/icons/            # Game-ready UI icons: 5 ability medallions + 5 tab glyphs
+│                           #   (raw/ holds the AI sources; scripts/process-icons.js rebuilds)
 ├─ js/
 │  ├─ config.js             # ⚙️ All balance constants & formula helpers (TUNE HERE)
 │  ├─ data.js               # Static defs: stats, upgrades, saga, regions, names

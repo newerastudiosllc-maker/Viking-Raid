@@ -244,20 +244,32 @@
     });
   }
 
+  const AB_ART = {
+    berserk: "assets/icons/ab_berserk.png",
+    shield: "assets/icons/ab_shield.png",
+    horn: "assets/icons/ab_horn.png",
+    valkyrie: "assets/icons/ab_valkyrie.png",
+  };
+  function abIconHtml(id, fallback) {
+    const src = id === "ragnarok" ? "assets/icons/ab_ragnarok.png" : AB_ART[id];
+    if (src) return '<img class="ab-art" src="' + src + '" alt="" draggable="false" />';
+    return '<span class="ab-icon">' + fallback + "</span>";
+  }
+
   function buildAbilities() {
     let html = "";
     Object.keys(CONFIG.ABILITIES).forEach(function (id) {
       const a = CONFIG.ABILITIES[id];
       html +=
         '<button class="ab-btn locked" data-ab="' + id + '">' +
-          '<span class="ab-icon">' + a.icon + '</span>' +
+          abIconHtml(id, a.icon) +
           '<span class="ab-lock">Lv ' + a.unlockLevel + '</span>' +
           '<span class="ab-cd"></span>' +
         '</button>';
     });
     html +=
       '<button class="ab-btn rag" id="ragBtn" aria-label="Ragnarok ultimate">' +
-        '<span class="ab-icon">🌩️</span>' +
+        abIconHtml("ragnarok", "🌩️") +
         '<span class="ab-lock">RAGE</span>' +
         '<span class="ab-cd"></span>' +
       '</button>';

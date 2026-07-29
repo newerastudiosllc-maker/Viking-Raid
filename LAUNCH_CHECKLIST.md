@@ -21,6 +21,7 @@ Legend: ✅ already done in this repo · 🔲 your action · 💰 may cost money
 | Splash sources `assets/splash.png` / `splash-dark.png` (2732×2732) | ✅ |
 | Feature graphic `screenshots/feature_graphic.png` (exact 1024×500 key art) | ✅ |
 | Unique scene art for all 6 regions + boss lair backdrop | ✅ |
+| Painted UI icon set (5 ability medallions + 5 tab glyphs, `assets/icons/`) | ✅ |
 | Tests (`npm test` → 73 checks, 0 errors) | ✅ |
 
 ---

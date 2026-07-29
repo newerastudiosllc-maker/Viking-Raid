@@ -2,7 +2,7 @@
    VIKING RAID — service worker (offline app shell)
    New Era Studios LLC
    ============================================================ */
-const CACHE = "viking-raid-v2";
+const CACHE = "viking-raid-v3";
 const SHELL = [
   "./",
   "./index.html",
@@ -28,6 +28,16 @@ const SHELL = [
   "./assets/scene_bosslair.png",
   "./assets/icon-192.png",
   "./assets/icon-512.png",
+  "./assets/icons/ab_berserk.png",
+  "./assets/icons/ab_shield.png",
+  "./assets/icons/ab_horn.png",
+  "./assets/icons/ab_valkyrie.png",
+  "./assets/icons/ab_ragnarok.png",
+  "./assets/icons/tab_raid.png",
+  "./assets/icons/tab_forge.png",
+  "./assets/icons/tab_hero.png",
+  "./assets/icons/tab_loot.png",
+  "./assets/icons/tab_saga.png",
 ];
 
 self.addEventListener("install", (e) => {

@@ -138,6 +138,8 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; ba
 }
 .ab-btn:active { transform: scale(0.92); }
 .ab-icon { font-size: 24px; filter: drop-shadow(0 1px 2px #000); }
+.ab-art { position: absolute; inset: -2px; width: calc(100% + 4px); height: calc(100% + 4px); object-fit: cover; border-radius: 50%; pointer-events: none; }
+.ab-btn .ab-lock, .ab-btn .ab-cd { z-index: 2; }
 .ab-lock {
   position: absolute; bottom: 3px; font-size: 9px; font-weight: 800; color: #fff;
   text-shadow: 0 1px 2px #000;
@@ -264,6 +266,8 @@ button { font-family: inherit; cursor: pointer; border: none; color: inherit; ba
   gap: 2px; font-size: 20px; color: var(--muted); position: relative;
 }
 .tab span { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+.tab-ico { width: 24px; height: 24px; object-fit: contain; opacity: 0.55; filter: grayscale(0.55); transition: opacity 0.15s, filter 0.15s; }
+.tab.active .tab-ico { opacity: 1; filter: none; }
 .tab.active { color: var(--gold-bright); }
 .tab.active::after {
   content: ""; position: absolute; top: 0; width: 28px; height: 3px; border-radius: 0 0 3px 3px;

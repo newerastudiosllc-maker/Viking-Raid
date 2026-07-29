@@ -136,11 +136,14 @@ function drawChrome(c, st, v) {
   c.font="bold 34px sans-serif"; c.textAlign="left"; c.fillStyle="#ffd870"; c.fillText("GOLD "+fmt(st.gold), 40, 168);
   c.textAlign="center"; c.fillStyle="#ece7d8"; c.font="bold 24px sans-serif"; c.fillText("TAP "+fmt(G.derived.tapDmg)+"    CREW "+fmt(G.derived.crewDps)+"/s", W/2, 168);
   c.textAlign="right"; c.fillStyle="#b9e6ff"; c.font="bold 34px sans-serif"; c.fillText("SAGA "+fmt(st.saga.shards), W-40, 168);
-  const abs=["🔥","🛡️","📯","⚡"]; const aw=110, gap=26; const total=abs.length*aw+(abs.length-1)*gap; let ax=(W-total)/2; const ay=H-360;
-  abs.forEach((ic)=>{ c.fillStyle="#1b2230"; c.beginPath(); c.arc(ax+aw/2, ay+aw/2, aw/2, 0, Math.PI*2); c.fill(); c.lineWidth=4; c.strokeStyle="#3a4356"; c.beginPath(); c.arc(ax+aw/2,ay+aw/2,aw/2,0,Math.PI*2); c.stroke(); c.font="48px sans-serif"; c.textAlign="center"; c.textBaseline="middle"; c.fillText(ic, ax+aw/2, ay+aw/2); ax+=aw+gap; });
+  const abs=["ab_berserk","ab_shield","ab_horn","ab_valkyrie"]; const aw=110, gap=26; const total=abs.length*aw+(abs.length-1)*gap; let ax=(W-total)/2; const ay=H-360;
+  abs.forEach((key)=>{ const im=IMG[key]; c.save(); c.beginPath(); c.arc(ax+aw/2, ay+aw/2, aw/2, 0, Math.PI*2); c.clip(); if(im) c.drawImage(im, ax, ay, aw, aw); else { c.fillStyle="#1b2230"; c.fillRect(ax,ay,aw,aw); } c.restore(); c.lineWidth=4; c.strokeStyle="#3a4356"; c.beginPath(); c.arc(ax+aw/2,ay+aw/2,aw/2,0,Math.PI*2); c.stroke(); ax+=aw+gap; });
   // Ragnarok button (5th, gold)
-  c.fillStyle="#3a1a12"; c.beginPath(); c.arc(ax+aw/2, ay+aw/2, aw/2, 0, Math.PI*2); c.fill();
-  c.lineWidth=5; const rage=st._shotRage!=null?st._shotRage:0; c.strokeStyle = rage>=1?"#ffd870":"#8a4a2a"; c.beginPath(); c.arc(ax+aw/2,ay+aw/2,aw/2,0,Math.PI*2); c.stroke(); c.font="50px sans-serif"; c.fillText("🌩️", ax+aw/2, ay+aw/2);
+  const rage=st._shotRage!=null?st._shotRage:0;
+  c.save(); c.beginPath(); c.arc(ax+aw/2, ay+aw/2, aw/2, 0, Math.PI*2); c.clip();
+  if(IMG.ab_ragnarok) c.drawImage(IMG.ab_ragnarok, ax, ay, aw, aw); else { c.fillStyle="#3a1a12"; c.fillRect(ax,ay,aw,aw); }
+  c.restore();
+  c.lineWidth=5; c.strokeStyle = rage>=1?"#ffd870":"#8a4a2a"; c.beginPath(); c.arc(ax+aw/2,ay+aw/2,aw/2,0,Math.PI*2); c.stroke();
   c.textBaseline="alphabetic";
   // rage meter
   const rbw=640, rbx=(W-rbw)/2, rby=H-215, rbh=18, ready=rage>=1;
@@ -152,8 +155,11 @@ function drawChrome(c, st, v) {
   c.fillText(ready?"RAGNAROK READY — TAP":"RAGE "+Math.floor(rage*100)+"%", W/2, rby+rbh/2); c.textBaseline="alphabetic";
   // tabs
   const th=150; c.fillStyle="#10141e"; c.fillRect(0, H-th, W, th); c.fillStyle="#caa24a"; c.fillRect(0, H-th, W, 5);
-  const tabs=[["⚔","Raid",true],["🔨","Forge",false],["🧔","Hero",false],["🎒","Loot",false],["🌀","Saga",false]]; const tw=W/tabs.length;
-  tabs.forEach((t,i)=>{ const cx2=i*tw+tw/2; c.textAlign="center"; c.textBaseline="middle"; c.font="52px sans-serif"; c.fillStyle=t[2]?"#ffd870":"#8c8674"; c.fillText(t[0], cx2, H-th+52); c.font="bold 24px sans-serif"; c.fillText(t[1], cx2, H-th+108); if(t[2]){c.fillStyle="#ffd870"; c.fillRect(cx2-30, H-th, 60, 6);} });
+  const tabs=[["tab_raid","Raid",true],["tab_forge","Forge",false],["tab_hero","Hero",false],["tab_loot","Loot",false],["tab_saga","Saga",false]]; const tw=W/tabs.length;
+  tabs.forEach((t,i)=>{ const cx2=i*tw+tw/2; const im=IMG[t[0]]; const isz=56;
+    if(im){ c.save(); if(!t[2]){c.globalAlpha=0.5;} c.drawImage(im, cx2-isz/2, H-th+24, isz, isz); c.restore(); }
+    c.textAlign="center"; c.textBaseline="middle"; c.font="bold 24px sans-serif"; c.fillStyle=t[2]?"#ffd870":"#8c8674"; c.fillText(t[1], cx2, H-th+112);
+    if(t[2]){c.fillStyle="#ffd870"; c.fillRect(cx2-30, H-th, 60, 6);} });
 }
 
 function drawFloaters(c, list) {
@@ -195,6 +201,9 @@ async function main() {
   await loadIm("scene_bosslair", "scene_bosslair.png");
   await loadIm("hero", "hero_chieftain.png");
   await loadIm("logo", "logo.png");
+  for (const n of ["ab_berserk","ab_shield","ab_horn","ab_valkyrie","ab_ragnarok","tab_raid","tab_forge","tab_hero","tab_loot","tab_saga"]) {
+    IMG[n] = await loadImage(path.resolve(__dirname, "..", "assets", "icons", n + ".png"));
+  }
   const time = 1.2;
 
   await shot("01_splash", function (c) {

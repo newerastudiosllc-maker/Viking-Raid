@@ -28,6 +28,8 @@ const EXCLUDE = new Set([
   "assets/icon-1024.png",
   "assets/feature_graphic_art.png",
 ]);
+// Raw AI icon sources — processed versions live in assets/icons/*.png
+const EXCLUDE_DIRS = new Set(["assets/icons/raw"]);
 
 function rmrf(p) {
   if (!fs.existsSync(p)) return;
@@ -35,7 +37,7 @@ function rmrf(p) {
 }
 function copy(src, dest) {
   const rel = path.relative(ROOT, src).split(path.sep).join("/");
-  if (EXCLUDE.has(rel)) return;
+  if (EXCLUDE.has(rel) || EXCLUDE_DIRS.has(rel)) return;
   const stat = fs.statSync(src);
   if (stat.isDirectory()) {
     fs.mkdirSync(dest, { recursive: true });
