@@ -1,0 +1,20 @@
+{
+  "name": "Viking Raid",
+  "short_name": "Viking Raid",
+  "description": "Plunder villages, level your warband, and set sail for new lands. An epic incremental raiding RPG by New Era Studios LLC.",
+  "id": "/",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#06080d",
+  "theme_color": "#0a0d14",
+  "categories": ["games", "role_playing", "strategy"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "icons": [
+    { "src": "assets/icon-1024.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-1024.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-1024.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

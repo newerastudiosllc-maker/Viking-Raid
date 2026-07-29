@@ -1,0 +1,16 @@
+{
+  "appId": "com.newerastudios.vikingraid",
+  "appName": "Viking Raid",
+  "webDir": "www",
+  "backgroundColor": "#06080d",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "vikingraid.app"
+  },
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#06080d",
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}

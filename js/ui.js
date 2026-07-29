@@ -1,0 +1,418 @@
+/* ============================================================
+   VIKING RAID — ui.js
+   DOM UI controller: HUD, tabs, panels, modals, toasts.
+   New Era Studios LLC
+   ============================================================ */
+(function (global) {
+  "use strict";
+
+  const UI = (global.UI = {});
+  let el = {};
+  let tab = "raid";
+  let buyMode = 1; // 1 | 10 | "max"
+  let toastTimer = null;
+  let abilityEls = {};
+
+  function $(id) { return document.getElementById(id); }
+  function fmt(n) { return Render.formatNum(n); }
+
+  UI.init = function () {
+    el = {
+      splash: $("splash"), startBtn: $("splashStart"),
+      regionBadge: $("regionBadge"), gold: $("gold"), shards: $("shards"),
+      levelBadge: $("levelBadge"), xpFill: $("xpFill"), xpText: $("xpText"),
+      tapVal: $("tapVal"), crewVal: $("crewVal"), repairBtn: $("repairBtn"),
+      menuBtn: $("menuBtn"),
+      stage: $("stage"),
+      abilities: $("abilities"),
+      panel: $("panel"),
+      panelForge: $("panelForge"), panelHero: $("panelHero"),
+      panelSaga: $("panelSaga"),
+      forgeList: $("forgeList"), buyModeBtn: $("buyMode"),
+      unspent: $("unspentPts"), statList: $("statList"),
+      derivedStats: $("derivedStats"), abilityInfo: $("abilityInfo"),
+      sagaGain: $("sagaGain"), sagaBtn: $("sagaPrestige"),
+      sagaTotal: $("sagaTotal"), sagaShards: $("sagaShards"), sagaList: $("sagaList"),
+      toast: $("toast"),
+      modalSettings: $("modalSettings"),
+      modalOffline: $("modalOffline"), offReport: $("offReport"),
+      modalPrestige: $("modalPrestige"), prestigeDetail: $("prestigeDetail"),
+    };
+
+    // tabs
+    document.querySelectorAll("#tabs .tab").forEach(function (btn) {
+      btn.addEventListener("click", function () { UI.setTab(btn.dataset.tab); });
+    });
+
+    // splash
+    el.startBtn.addEventListener("click", UI.startGame);
+    el.stage.addEventListener("pointerdown", onStagePointer, { passive: true });
+
+    // buy mode
+    el.buyModeBtn.addEventListener("click", function () {
+      buyMode = buyMode === 1 ? 10 : buyMode === 10 ? "max" : 1;
+      el.buyModeBtn.textContent = buyMode === "max" ? "MAX" : "x" + buyMode;
+      UI.refreshForge();
+    });
+
+    // menu
+    el.menuBtn.addEventListener("click", function () { UI.openModal("modalSettings"); UI.refreshSettings(); });
+    el.repairBtn.addEventListener("click", function () {
+      if (Sys.repair()) { SFX.upgrade(); UI.toast("Longship repaired!"); }
+      else { SFX.error(); UI.toast("Not enough gold."); }
+    });
+
+    // saga
+    el.sagaBtn.addEventListener("click", function () { UI.openPrestige(); });
+
+    buildForge();
+    buildStats();
+    buildSaga();
+    buildAbilities();
+
+    // settings buttons
+    bindSetting("setSfx", "sfx");
+    bindSetting("setHaptics", "haptics");
+    bindSetting("setFx", "reducedFx");
+    $("setExport").addEventListener("click", UI.doExport);
+    $("setImport").addEventListener("click", UI.doImport);
+    $("setWipe").addEventListener("click", UI.confirmWipe);
+    $("setClose").addEventListener("click", function () { UI.closeModal("modalSettings"); });
+    $("offClose").addEventListener("click", function () { UI.closeModal("modalOffline"); });
+    $("prestigeConfirm").addEventListener("click", UI.doPrestige);
+    $("prestigeCancel").addEventListener("click", function () { UI.closeModal("modalPrestige"); });
+
+    // close modals on backdrop
+    document.querySelectorAll(".modal").forEach(function (m) {
+      m.addEventListener("click", function (e) { if (e.target === m) UI.closeModal(m.id); });
+    });
+  };
+
+  function bindSetting(btnId, key) {
+    const b = $(btnId);
+    if (b) b.addEventListener("click", function () {
+      G.state.settings[key] = !G.state.settings[key];
+      if (key === "sfx") SFX.setEnabled(G.state.settings.sfx);
+      UI.refreshSettings();
+    });
+  }
+
+  function onStagePointer(e) {
+    if (tab !== "raid" || G.paused) return;
+    const r = el.stage.getBoundingClientRect();
+    const x = (e.clientX - r.left);
+    const y = (e.clientY - r.top);
+    SFX.resume();
+    Sys.tap(x, y);
+    SFX.tap(false);
+  }
+
+  // --- Tab switching -----------------------------------------------
+  UI.setTab = function (name) {
+    tab = name;
+    document.querySelectorAll("#tabs .tab").forEach(function (b) {
+      b.classList.toggle("active", b.dataset.tab === name);
+    });
+    const showPanel = name !== "raid";
+    el.panel.style.display = showPanel ? "flex" : "none";
+    document.querySelectorAll(".panel-pane").forEach(function (p) { p.style.display = "none"; });
+    if (name === "forge") { $("panelForge").style.display = "block"; UI.refreshForge(); }
+    if (name === "hero") { $("panelHero").style.display = "block"; UI.refreshHero(); }
+    if (name === "saga") { $("panelSaga").style.display = "block"; UI.refreshSaga(); }
+  };
+
+  // --- Start from splash -------------------------------------------
+  UI.startGame = function () {
+    SFX.resume();
+    el.splash.classList.add("hidden");
+    setTimeout(function () { el.splash.style.display = "none"; }, 450);
+  };
+
+  // --- Build static lists ------------------------------------------
+  function buildForge() {
+    let html = "";
+    DATA.UPGRADES.forEach(function (u) {
+      html +=
+        '<div class="upg" data-id="' + u.id + '">' +
+          '<div class="upg-icon">' + u.icon + '</div>' +
+          '<div class="upg-body">' +
+            '<div class="upg-name">' + u.name + ' <span class="upg-lv" data-lv></span></div>' +
+            '<div class="upg-desc">' + u.desc + '</div>' +
+          '</div>' +
+          '<button class="upg-buy" data-buy><span class="bc"></span></button>' +
+        '</div>';
+    });
+    el.forgeList.innerHTML = html;
+    el.forgeList.querySelectorAll(".upg").forEach(function (card) {
+      card.querySelector("[data-buy]").addEventListener("click", function () {
+        const id = card.dataset.id;
+        if (Sys.buyUpgrade(id, buyMode)) { SFX.upgrade(); }
+        else { SFX.error(); }
+        UI.refreshForge();
+      });
+    });
+  }
+
+  function buildStats() {
+    let html = "";
+    DATA.STATS.forEach(function (st) {
+      html +=
+        '<div class="stat" data-id="' + st.id + '">' +
+          '<div class="stat-icon" style="color:' + st.color + '">' + st.icon + '</div>' +
+          '<div class="stat-body">' +
+            '<div class="stat-name">' + st.name + '</div>' +
+            '<div class="stat-desc">' + st.desc + '</div>' +
+            '<div class="stat-val" data-val>0</div>' +
+          '</div>' +
+          '<button class="stat-add" data-add>+</button>' +
+        '</div>';
+    });
+    el.statList.innerHTML = html;
+    el.statList.querySelectorAll(".stat").forEach(function (row) {
+      row.querySelector("[data-add]").addEventListener("click", function () {
+        if (Sys.allocStat(row.dataset.id)) { SFX.upgrade(); }
+        else { SFX.error(); }
+        UI.refreshHero();
+      });
+    });
+  }
+
+  function buildSaga() {
+    let html = "";
+    DATA.SAGA.forEach(function (s) {
+      html +=
+        '<div class="saga-upg" data-id="' + s.id + '">' +
+          '<div class="upg-icon">' + s.icon + '</div>' +
+          '<div class="upg-body">' +
+            '<div class="upg-name">' + s.name + ' <span data-lv></span></div>' +
+            '<div class="upg-desc">' + s.desc + '</div>' +
+          '</div>' +
+          '<button class="upg-buy shard" data-buy><span class="bc"></span></button>' +
+        '</div>';
+    });
+    el.sagaList.innerHTML = html;
+    el.sagaList.querySelectorAll(".saga-upg").forEach(function (card) {
+      card.querySelector("[data-buy]").addEventListener("click", function () {
+        if (Sys.buySaga(card.dataset.id)) { SFX.upgrade(); }
+        else { SFX.error(); }
+        UI.refreshSaga();
+      });
+    });
+  }
+
+  function buildAbilities() {
+    let html = "";
+    Object.keys(CONFIG.ABILITIES).forEach(function (id) {
+      const a = CONFIG.ABILITIES[id];
+      html +=
+        '<button class="ab-btn locked" data-ab="' + id + '">' +
+          '<span class="ab-icon">' + a.icon + '</span>' +
+          '<span class="ab-lock">Lv ' + a.unlockLevel + '</span>' +
+          '<span class="ab-cd"></span>' +
+        '</button>';
+    });
+    el.abilities.innerHTML = html;
+    abilityEls = {};
+    el.abilities.querySelectorAll("[data-ab]").forEach(function (b) {
+      const id = b.dataset.ab;
+      abilityEls[id] = {
+        btn: b, cd: b.querySelector(".ab-cd"), lock: b.querySelector(".ab-lock"),
+      };
+      b.addEventListener("click", function () {
+        if (Sys.activateAbility(id)) SFX.ability();
+        else SFX.error();
+      });
+    });
+  }
+
+  // --- Refresh routines --------------------------------------------
+  UI.refreshForge = function () {
+    const gold = G.state.gold;
+    el.forgeList.querySelectorAll(".upg").forEach(function (card) {
+      const id = card.dataset.id;
+      const def = DATA.UPGRADES.find(function (u) { return u.id === id; });
+      const lvl = G.state.upgrades[id] || 0;
+      card.querySelector("[data-lv]").textContent = "Lv " + lvl;
+      const aff = Sys.maxAffordable(id, buyMode === "max" ? 100000 : buyMode);
+      const buyBtn = card.querySelector("[data-buy]");
+      const label = buyMode === "max"
+        ? (aff.count > 0 ? "+" + aff.count + " · 🪙" + fmt(aff.spent) : "🪙" + fmt(Sys.upgradeCost(id, lvl)))
+        : "🪙" + fmt(Sys.upgradeCost(id, lvl));
+      buyBtn.querySelector(".bc").textContent = label;
+      const affordable = buyMode === "max" ? aff.count > 0 : gold >= Sys.upgradeCost(id, lvl);
+      buyBtn.classList.toggle("disabled", !affordable);
+      card.classList.toggle("maxed", false);
+    });
+  };
+
+  UI.refreshHero = function () {
+    const s = G.state;
+    el.unspent.textContent = s.unspentStatPoints;
+    el.unspent.classList.toggle("show", s.unspentStatPoints > 0);
+    el.statList.querySelectorAll(".stat").forEach(function (row) {
+      row.querySelector("[data-val]").textContent = s.stats[row.dataset.id] || 0;
+      const can = s.unspentStatPoints > 0;
+      row.querySelector("[data-add]").classList.toggle("disabled", !can);
+    });
+    // derived stats
+    const d = G.derived;
+    el.derivedStats.innerHTML =
+      stat("Tap Damage", "⚔️", fmt(d.tapDmg)) +
+      stat("Crew DPS", "🪓", fmt(d.crewDps) + "/s") +
+      stat("Crit Chance", "🎯", (d.critChance * 100).toFixed(1) + "%") +
+      stat("Crit Mult", "💥", d.critMult.toFixed(2) + "x") +
+      stat("Longship HP", "🛡️", fmt(d.shipMaxHp)) +
+      stat("Gold Bonus", "🍀", "+" + ((d.goldMult - 1) * 100).toFixed(0) + "%") +
+      stat("Attack Speed", "🥁", (1 / d.crewInterval).toFixed(2) + "/s");
+    // ability unlock info
+    let h = "";
+    Object.keys(CONFIG.ABILITIES).forEach(function (id) {
+      const a = CONFIG.ABILITIES[id];
+      const unlocked = s.level >= a.unlockLevel;
+      h += '<div class="ab-info' + (unlocked ? "" : " locked") + '">' +
+        '<span class="ab-info-icon">' + a.icon + '</span>' +
+        '<div><b>' + a.name + '</b> ' + (unlocked ? "" : '<i>(unlocks Lv ' + a.unlockLevel + ')</i>') +
+        '<div class="ab-info-desc">' + a.desc + ' <span class="muted">CD ' + a.cooldownS + 's</span></div></div></div>';
+    });
+    el.abilityInfo.innerHTML = h;
+  };
+
+  UI.refreshSaga = function () {
+    const s = G.state;
+    el.sagaShards.textContent = fmt(s.saga.shards);
+    el.sagaTotal.textContent = fmt(s.saga.totalEarned);
+    const gain = Sys.sagaGain();
+    el.sagaGain.textContent = "+" + gain;
+    const can = Sys.canPrestige();
+    el.sagaBtn.classList.toggle("disabled", !can);
+    el.sagaBtn.textContent = can ? "SET SAIL FOR NEW LANDS" : "Clear Region " + (CONFIG.SAGA_MIN_REGION + 1) + " to unlock";
+    el.sagaList.querySelectorAll(".saga-upg").forEach(function (card) {
+      const id = card.dataset.id;
+      const def = DATA.SAGA.find(function (u) { return u.id === id; });
+      const lvl = s.saga.upgrades[id] || 0;
+      card.querySelector("[data-lv]").textContent = "Lv " + lvl;
+      const cost = Sys.sagaCost(id, lvl);
+      const b = card.querySelector("[data-buy]");
+      b.querySelector(".bc").textContent = "💎 " + cost;
+      b.classList.toggle("disabled", s.saga.shards < cost);
+    });
+  };
+
+  function stat(name, icon, val) {
+    return '<div class="ds"><span>' + icon + " " + name + '</span><b>' + val + "</b></div>";
+  }
+
+  UI.refreshSettings = function () {
+    const s = G.state.settings;
+    $("setSfx").classList.toggle("on", s.sfx);
+    $("setHaptics").classList.toggle("on", s.haptics);
+    $("setFx").classList.toggle("on", !s.reducedFx);
+  };
+
+  // --- Per-frame HUD update ----------------------------------------
+  UI.update = function () {
+    const s = G.state;
+    const d = G.derived;
+    if (!s || !d) return;
+    const v = G.village;
+    el.gold.textContent = "🪙 " + fmt(s.gold);
+    el.shards.textContent = "💎 " + fmt(s.saga.shards);
+    el.levelBadge.textContent = "LVL " + s.level;
+    const need = F.xpForLevel(s.level);
+    el.xpFill.style.width = Math.min(100, (s.xp / need) * 100) + "%";
+    el.xpText.textContent = fmt(s.xp) + " / " + fmt(need) + " XP";
+    const regName = DATA.regionName(s.region);
+    el.regionBadge.innerHTML = '<span class="rb-name">' + regName + "</span>" +
+      '<span class="rb-sub">Village ' + (s.villageIndex + 1) + "/" + CONFIG.VILLAGES_PER_REGION +
+      (v && v.isBoss ? " · BOSS" : "") + "</span>";
+    el.tapVal.textContent = "⚔ " + fmt(d.tapDmg);
+    el.crewVal.textContent = "🪓 " + fmt(d.crewDps) + "/s";
+
+    // repair button visibility
+    const damaged = s.shipHp < d.shipMaxHp * 0.999;
+    el.repairBtn.style.display = damaged ? "flex" : "none";
+
+    // abilities
+    Object.keys(CONFIG.ABILITIES).forEach(function (id) {
+      const a = CONFIG.ABILITIES[id];
+      const st = s.abilities[id];
+      const e = abilityEls[id];
+      if (!e) return;
+      const unlocked = s.level >= a.unlockLevel;
+      e.btn.classList.toggle("locked", !unlocked);
+      e.btn.classList.toggle("active", st.activeLeft > 0);
+      const ready = unlocked && st.cdLeft <= 0 && st.activeLeft <= 0;
+      e.btn.classList.toggle("ready", ready);
+      if (!unlocked) { e.cd.style.height = "100%"; e.lock.textContent = "Lv " + a.unlockLevel; }
+      else if (st.cdLeft > 0) { e.cd.style.height = (st.cdLeft / a.cooldownS) * 100 + "%"; e.lock.textContent = Math.ceil(st.cdLeft) + "s"; }
+      else if (st.activeLeft > 0) { e.cd.style.height = "0%"; e.lock.textContent = "ON"; }
+      else { e.cd.style.height = "0%"; e.lock.textContent = ""; }
+    });
+
+    if (tab === "forge") UI.refreshForge();
+  };
+
+  // --- Toast & modals ----------------------------------------------
+  UI.toast = function (msg, ms) {
+    el.toast.textContent = msg;
+    el.toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.toast.classList.remove("show"); }, ms || 1800);
+  };
+  UI.openModal = function (id) { $(id).classList.add("show"); };
+  UI.closeModal = function (id) { $(id).classList.remove("show"); };
+
+  UI.showOffline = function (report) {
+    if (!report) return;
+    const mins = Math.floor(report.seconds / 60);
+    el.offReport.innerHTML =
+      "<h3>⚖️ Away Report</h3>" +
+      "<p>Your warband raided while you were gone for <b>" + mins + " min</b>" + (report.capped ? " (capped)" : "") + ".</p>" +
+      '<div class="off-row"><span>🪙 Gold plundered</span><b>+' + fmt(report.gold) + "</b></div>" +
+      '<div class="off-row"><span>⭐ Experience</span><b>+' + fmt(report.xp) + "</b></div>";
+    UI.openModal("modalOffline");
+  };
+
+  UI.openPrestige = function () {
+    if (!Sys.canPrestige()) { SFX.error(); UI.toast("Defeat more region bosses first."); return; }
+    const gain = Sys.sagaGain();
+    el.prestigeDetail.innerHTML =
+      "<p>Sail beyond the known seas. Your gold, upgrades, level and regions reset — but you earn <b>💎 " + gain +
+      " Saga Shards</b> and keep all permanent Saga bonuses.</p>" +
+      '<div class="off-row"><span>Highest region reached</span><b>' + (G.state.highestRegion + 1) + "</b></div>" +
+      '<div class="off-row"><span>Shards earned now</span><b>+' + gain + "</b></div>" +
+      '<div class="off-row"><span>Total shards after</span><b>' + (G.state.saga.shards + gain) + "</b></div>";
+    UI.openModal("modalPrestige");
+  };
+  UI.doPrestige = function () {
+    Sys.doPrestige();
+    SFX.prestige();
+    UI.closeModal("modalPrestige");
+    UI.setTab("raid");
+    UI.toast("A new saga begins! ⛵");
+  };
+
+  UI.doExport = function () {
+    const code = State.exportCode(G.state);
+    $("exportCode").value = code;
+    $("exportCode").select();
+    try { document.execCommand("copy"); UI.toast("Save code copied!"); } catch (e) {}
+  };
+  UI.doImport = function () {
+    const code = prompt("Paste your VR1- save code:");
+    if (!code) return;
+    const st = State.importCode(code);
+    if (!st) { SFX.error(); UI.toast("Invalid save code."); return; }
+    Sys.init(st);
+    State.save(G.state);
+    UI.closeModal("modalSettings");
+    UI.toast("Save imported!");
+    location.reload();
+  };
+  UI.confirmWipe = function () {
+    if (confirm("Erase ALL progress? This cannot be undone.")) {
+      State.wipe();
+      location.reload();
+    }
+  };
+})(typeof window !== "undefined" ? window : this);

@@ -1,0 +1,24 @@
+{
+  "name": "viking-raid",
+  "version": "1.0.0",
+  "description": "Viking Raid — an epic incremental raiding RPG. Plunder, level, and set sail for new lands. By New Era Studios LLC.",
+  "private": true,
+  "author": "New Era Studios LLC",
+  "license": "UNLICENSED",
+  "scripts": {
+    "test": "node test_logic.js && node dom_smoke.js",
+    "build:web": "node scripts/build-web.js",
+    "assets": "capacitor-assets generate",
+    "sync": "cap sync",
+    "open:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/assets": "^3.0.5",
+    "jsdom": "^24.1.0"
+  }
+}
