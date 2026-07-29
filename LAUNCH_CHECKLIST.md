@@ -69,7 +69,7 @@ npx cap open android             # opens the project in Android Studio
 | # | Asset | Spec | Where to put it | How to make it |
 |---|---|---|---|---|
 | 4.1 | 🔲 App icon | 512×512 PNG, 32-bit, no alpha | Play Console → app → Main store listing | Use `assets/icon-1024.png` resized, or regenerate. |
-| 4.2 | 🔲 **Screenshots** (min 2, rec 3–8) | Phone: 16:9 or 9:16, min 320px, max 3840px JPEG/PNG | Play Console → Main store listing | Run the game on a phone/emulator at regions, boss fights, loot screen, daily quests. Capture with `adb exec-out screencap`. |
+| 4.2 | 🔲 **Screenshots** (min 2, rec 3–8) | Phone: 16:9 or 9:16, min 320px, max 3840px JPEG/PNG | Play Console → Main store listing | **Starter set included:** `screenshots/01_splash.png … 05_fortress.png` (true 1080×2340 renders) + `screenshots/feature_graphic.png` (1024×500). Regenerate any time with `npm i @napi-rs/canvas && node scripts/screenshot.js`. For live captures, run on a real device and use `adb exec-out screencap -p > shot.png`. |
 | 4.3 | 🔲 Feature graphic (optional but recommended) | 1024×500 PNG/JPEG | Play Console → Main store listing | A wide banner (longship + "Viking Raid" + "New Era Studios"). |
 | 4.4 | 🔲 Short description | ≤ 80 chars | Main store listing | e.g. *"Plunder, level & set sail. An epic Viking raiding RPG."* |
 | 4.5 | 🔲 Full description | ≤ 4000 chars | Main store listing | Expand on features: loops, loot, runes, daily quests, prestige, offline play. |
