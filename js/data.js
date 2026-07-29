@@ -161,6 +161,41 @@
     ],
 
     // --- Regions (first several hand-authored, then procedural) ------
+    // --- Warband specialists (hired with gold, scale multiplicatively) ---
+    UNITS: [
+      {
+        id: "berserker",
+        name: "Berserkers",
+        icon: "assets/icons/unit_berserker.png",
+        emoji: "🪓",
+        desc: "+2% Crew DPS each. Frenzied shock troops.",
+        baseCost: 400,
+        growth: 1.22,
+        unlockLevel: 6,
+      },
+      {
+        id: "archer",
+        name: "Archers",
+        icon: "assets/icons/unit_archer.png",
+        emoji: "🏹",
+        desc: "+2% Tap damage & +0.05% Crit each. Deadly volleys.",
+        baseCost: 650,
+        growth: 1.24,
+        unlockLevel: 10,
+      },
+      {
+        id: "shieldmaiden",
+        name: "Shieldmaidens",
+        icon: "assets/icons/unit_shieldmaiden.png",
+        emoji: "🛡️",
+        desc: "-0.8% ship damage taken & +0.04% regen each.",
+        baseCost: 900,
+        growth: 1.26,
+        unlockLevel: 14,
+      },
+    ],
+    UNIT_BY_ID: {},
+
     REGIONS: [
       { name: "The Frozen Shore",   art: "scene_frozen_shore", tint: "#1b2a3a", weather: "snow" },
       { name: "Whispering Fjords",  art: "scene_fjords",       tint: "#243440", weather: "mist" },
@@ -266,6 +301,8 @@
       { id: "rich",       name: "Dragon's Hoard",       icon: "🪙", desc: "Earn 1,000,000 total gold.",      check: (s) => s.totals.goldEarned >= 1e6, reward: { runes: 20 } },
       { id: "saga_1",     name: "A New Saga",           icon: "🌀", desc: "Prestige for the first time.",    check: (s) => s.saga.totalEarned > 0,     reward: { shards: 3 } },
       { id: "combo_50",   name: "Fury Unleashed",       icon: "⚡", desc: "Reach a 50-hit combo.",           check: (s) => (s.totals.maxCombo || 0) >= 50, reward: { runes: 12 } },
+      { id: "warband_10", name: "Growing Warband",      icon: "🪓", desc: "Hire 10 specialists.",            check: (s) => { const u = s.units || {}; return ((u.berserker||0)+(u.archer||0)+(u.shieldmaiden||0)) >= 10; }, reward: { runes: 10 } },
+      { id: "warband_100",name: "Legion of the North",  icon: "⚜️", desc: "Hire 100 specialists.",           check: (s) => { const u = s.units || {}; return ((u.berserker||0)+(u.archer||0)+(u.shieldmaiden||0)) >= 100; }, reward: { shards: 5 } },
     ],
 
     // --- Village modifiers (per-fight affixes; hp/dps/gold/xp are multipliers) ---
@@ -303,6 +340,7 @@
       { id: "gold",     track: "gold",      verb: "Plunder",     noun: "gold",       goal: 0,   reward: { runes: 4 } },
       { id: "upgrade",  track: "upgrades",  verb: "Forge",       noun: "upgrades",   goal: 6,   reward: { runes: 4 } },
       { id: "enchant",  track: "enchants",  verb: "Enchant",     noun: "items",      goal: 1,   reward: { runes: 7, shards: 1 } },
+      { id: "hire",     track: "hires",     verb: "Hire",        noun: "specialists", goal: 8,  reward: { runes: 4 } },
     ],
 
 
@@ -370,6 +408,7 @@
   DATA.AFFIXES.forEach((a) => (DATA.AFFIX_BY_ID[a.id] = a));
   DATA.SLOTS.forEach((s) => (DATA.SLOT_BY_ID[s.id] = s));
   DATA.MODIFIERS.forEach((m) => (DATA.MODIFIER_BY_ID[m.id] = m));
+  DATA.UNITS.forEach((u) => (DATA.UNIT_BY_ID[u.id] = u));
 
   global.DATA = DATA;
 })(typeof window !== "undefined" ? window : this);

@@ -108,6 +108,11 @@
     G.on("enchant", function () { SFX.upgrade(); });
     G.on("stat", function () { UI.refreshHero(); });
     G.on("upgrade", function () { UI.refreshForge(); });
+    G.on("hire", function (e) {
+      UI.refreshForge();
+      const def = DATA.UNIT_BY_ID[e.id];
+      if (def) UI.toast("⚜️ Hired " + e.count + " " + def.name + "!");
+    });
     G.on("sagaUpgrade", function () { UI.refreshSaga(); });
     G.on("abilityEnd", function () {});
     G.on("prestige", function () {});

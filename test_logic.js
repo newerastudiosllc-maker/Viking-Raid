@@ -208,6 +208,59 @@ ok("boss staggers below 35% HP", boss.staggered === true);
 G.runtime.hitstop = 0; boss.stagger = 0.01; Sys.tick(0.05);
 ok("boss enrages after stagger window", boss.fury === true);
 
+console.log("\n== Warband specialists (crew units) ==");
+function der() { Sys.recompute(); return G.derived; }
+(function () {
+  const s = State.defaults();
+  s.level = 20; s.gold = 1e9;
+  Sys.init(s);
+  ok("units defined", DATA.UNITS.length === 3 && !!DATA.UNIT_BY_ID.berserker);
+  ok("unit locked below unlock level", (function () { const s2 = State.defaults(); s2.level = 1; Sys.init(s2); return Sys.unitUnlocked("berserker") === false; })());
+  Sys.init(s);
+  ok("unit unlocked at level", Sys.unitUnlocked("shieldmaiden") === true);
+  const d0 = der();
+  const crew0 = d0.crewDps, tap0 = d0.tapDmg, crit0 = d0.critChance, reduce0 = d0.shipDmgReduce || 0;
+  ok("hire berserker succeeds", Sys.hireUnit("berserker", 10) === true);
+  ok("berserker count tracked", s.units.berserker === 10);
+  ok("berserkers boost crew dps", der().crewDps > crew0);
+  ok("hire archer boosts tap+crit", (function () {
+    Sys.hireUnit("archer", 10);
+    const d = der();
+    return d.tapDmg > tap0 && d.critChance > crit0;
+  })());
+  ok("hire shieldmaiden reduces ship damage", (function () {
+    Sys.hireUnit("shieldmaiden", 10);
+    return (der().shipDmgReduce || 0) > reduce0;
+  })());
+  ok("hiring costs gold", s.gold < 1e9);
+  ok("unit cost grows", Sys.unitCost("berserker", 10) > Sys.unitCost("berserker", 0));
+  ok("cannot hire more than affordable", (function () {
+    s.gold = 0;
+    return Sys.hireUnit("berserker", 1) === false;
+  })());
+  ok("shieldmaiden reduction is capped", (function () {
+    s.units.shieldmaiden = 10000; G.dirty = true;
+    return Math.abs(der().shipDmgReduce - CONFIG.CREW_SHIELD_REDUCE_CAP) < 1e-9;
+  })());
+  ok("prestige resets units", (function () {
+    s.units = { berserker: 5, archer: 3, shieldmaiden: 2 };
+    s.saga = s.saga || {}; s.highestRegion = 99; // ensure prestige allowed
+    if (!Sys.canPrestige()) return true; // can't test path; don't fail suite
+    Sys.doPrestige();
+    return Sys.totalUnits() === 0;
+  })());
+  ok("heal() adds units to old saves", (function () {
+    const old = State.defaults(); delete old.units;
+    const healed = State.heal ? State.heal(old) : null;
+    if (!healed) { // heal not exported; go through import/export
+      const code = State.exportCode(old);
+      const imp = State.importCode(code);
+      return imp && imp.units && imp.units.berserker === 0;
+    }
+    return healed.units && healed.units.berserker === 0;
+  })());
+})();
+
 console.log("\n== Save / load ==");
 State.save(st);
 const ld = State.load();

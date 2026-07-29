@@ -179,6 +179,14 @@
     RAGNAROK_BUFF_S: 8,
     RAGNAROK_BUFF_MULT: 2,
 
+    // --- Warband specialists (crew units) ----------------------------
+    CREW_BERSERKER_CREW_PCT: 0.02,    // +2% crew DPS per Berserker
+    CREW_ARCHER_TAP_PCT: 0.02,        // +2% tap damage per Archer
+    CREW_ARCHER_CRIT: 0.0005,         // +0.05% crit chance per Archer
+    CREW_SHIELD_REDUCE: 0.008,        // -0.8% ship damage taken per Shieldmaiden
+    CREW_SHIELD_REDUCE_CAP: 0.6,      // …capped at -60%
+    CREW_SHIELD_REGEN: 0.0004,        // +0.04% ship regen per Shieldmaiden
+
     // --- Boss fury / stagger -----------------------------------------
     BOSS_FURY_HP_FRAC: 0.35,
     BOSS_STAGGER_S: 4,

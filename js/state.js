@@ -47,6 +47,7 @@
       unspentStatPoints: 0,
       stats: { str: 0, led: 0, vit: 0, fot: 0 },
       upgrades: freshUpgrades(),
+      units: { berserker: 0, archer: 0, shieldmaiden: 0 },
       saga: {
         shards: 0,
         totalEarned: 0,
@@ -91,6 +92,7 @@
     out.meta = Object.assign({}, d.meta, s.meta || {});
     out.stats = Object.assign({}, d.stats, s.stats || {});
     out.upgrades = Object.assign(freshUpgrades(), s.upgrades || {});
+    out.units = Object.assign({ berserker: 0, archer: 0, shieldmaiden: 0 }, s.units || {});
     out.saga = Object.assign({}, d.saga, s.saga || {});
     out.saga.upgrades = Object.assign(freshSagaUpgrades(), (s.saga && s.saga.upgrades) || {});
     out.abilities = Object.assign(freshAbilities(), s.abilities || {});

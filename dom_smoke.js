@@ -230,6 +230,38 @@ check("modifier renders in region badge", () => {
   if (doc.getElementById("regionBadge").textContent.indexOf("Wealthy") < 0) throw new Error("modifier not shown");
 });
 
+check("warband unit cards render in forge", () => {
+  const cards = doc.querySelectorAll("#unitList .unit");
+  if (cards.length !== 3) throw new Error("expected 3 unit cards, got " + cards.length);
+});
+
+check("hire button hires a unit", () => {
+  G().state.level = 20;
+  G().state.gold = 1e9;
+  G().dirty = true;
+  window.UI.refreshForge();
+  const btn = doc.querySelector('#unitList .unit[data-unit="berserker"] [data-hire]');
+  if (!btn) throw new Error("no hire button");
+  btn.dispatchEvent(new window.Event("click", { bubbles: true }));
+  if ((G().state.units.berserker || 0) < 1) throw new Error("berserker not hired");
+});
+
+check("unit count shown after hire", () => {
+  window.UI.refreshForge();
+  const cnt = doc.querySelector('#unitList .unit[data-unit="berserker"] [data-count]');
+  if (!cnt || cnt.textContent.indexOf("×") < 0 || cnt.textContent === "×0") throw new Error("count not updated: " + (cnt && cnt.textContent));
+});
+
+check("locked unit shows unlock level", () => {
+  G().state.level = 1;
+  G().dirty = true;
+  window.UI.refreshForge();
+  const card = doc.querySelector('#unitList .unit[data-unit="shieldmaiden"]');
+  if (!card.classList.contains("locked")) throw new Error("shieldmaiden should be locked at level 1");
+  const bc = card.querySelector(".bc");
+  if (bc.textContent.indexOf("Lv") < 0) throw new Error("no unlock label");
+});
+
 driveFrames(10);
 
 console.log("\n== CHECKS ==");

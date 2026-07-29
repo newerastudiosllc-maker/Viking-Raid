@@ -31,6 +31,7 @@
       panelSaga: $("panelSaga"),
       panelLoot: $("panelLoot"),
       forgeList: $("forgeList"), buyModeBtn: $("buyMode"),
+      unitList: $("unitList"),
       equipSlots: $("equipSlots"), itemDetail: $("itemDetail"),
       invList: $("invList"), invCount: $("invCount"), invCap: $("invCap"),
       lootRunes: $("lootRunes"),
@@ -99,6 +100,7 @@
     el.invCap.textContent = CONFIG.LOOT_INV_CAP;
 
     buildForge();
+    buildUnits();
     buildStats();
     buildSaga();
     buildAbilities();
@@ -298,6 +300,29 @@
   }
 
   // --- Refresh routines --------------------------------------------
+  function buildUnits() {
+    if (!el.unitList) return;
+    let html = "";
+    DATA.UNITS.forEach(function (u) {
+      html +=
+        '<div class="upg unit" data-unit="' + u.id + '">' +
+          '<div class="upg-icon unit-icon"><img src="' + u.icon + '" alt="" onerror="this.outerHTML=\'' + u.emoji + '\'" /></div>' +
+          '<div class="upg-body">' +
+            '<div class="upg-name">' + u.name + ' <span class="upg-lv" data-count></span></div>' +
+            '<div class="upg-desc">' + u.desc + '</div>' +
+          '</div>' +
+          '<button class="upg-buy" data-hire><span class="bc"></span></button>' +
+        '</div>';
+    });
+    el.unitList.innerHTML = html;
+    el.unitList.querySelectorAll(".unit").forEach(function (card) {
+      card.querySelector("[data-hire]").addEventListener("click", function () {
+        if (Sys.hireUnit(card.dataset.unit, buyMode)) { SFX.upgrade(); }
+        else { SFX.error(); }
+      });
+    });
+  }
+
   UI.refreshForge = function () {
     const gold = G.state.gold;
     el.forgeList.querySelectorAll(".upg").forEach(function (card) {
@@ -314,6 +339,28 @@
       const affordable = buyMode === "max" ? aff.count > 0 : gold >= Sys.upgradeCost(id, lvl);
       buyBtn.classList.toggle("disabled", !affordable);
       card.classList.toggle("maxed", false);
+    });
+    // warband specialists
+    if (el.unitList) el.unitList.querySelectorAll(".unit").forEach(function (card) {
+      const id = card.dataset.unit;
+      const def = DATA.UNIT_BY_ID[id];
+      const n = (G.state.units && G.state.units[id]) || 0;
+      const locked = !Sys.unitUnlocked(id);
+      card.classList.toggle("locked", locked);
+      card.querySelector("[data-count]").textContent = "×" + n;
+      const buyBtn = card.querySelector("[data-hire]");
+      if (locked) {
+        buyBtn.querySelector(".bc").textContent = "Lv " + def.unlockLevel;
+        buyBtn.classList.add("disabled");
+        return;
+      }
+      const aff = Sys.unitMaxAffordable(id, buyMode === "max" ? 100000 : buyMode);
+      const label = buyMode === "max"
+        ? (aff.count > 0 ? "+" + aff.count + " · 🪙" + fmt(aff.spent) : "🪙" + fmt(Sys.unitCost(id, n)))
+        : "🪙" + fmt(Sys.unitCost(id, n));
+      buyBtn.querySelector(".bc").textContent = label;
+      const affordable = buyMode === "max" ? aff.count > 0 : gold >= Sys.unitCost(id, n);
+      buyBtn.classList.toggle("disabled", !affordable);
     });
   };
 
@@ -335,7 +382,9 @@
       stat("Crit Mult", "💥", d.critMult.toFixed(2) + "x") +
       stat("Longship HP", "🛡️", fmt(d.shipMaxHp)) +
       stat("Gold Bonus", "🍀", "+" + ((d.goldMult - 1) * 100).toFixed(0) + "%") +
-      stat("Attack Speed", "🥁", (1 / d.crewInterval).toFixed(2) + "/s");
+      stat("Attack Speed", "🥁", (1 / d.crewInterval).toFixed(2) + "/s") +
+      stat("Warband", "⚜️", Sys.totalUnits() + " specialists") +
+      stat("Dmg Reduction", "🧿", "-" + ((d.shipDmgReduce || 0) * 100).toFixed(0) + "%");
     // ability unlock info
     let h = "";
     Object.keys(CONFIG.ABILITIES).forEach(function (id) {

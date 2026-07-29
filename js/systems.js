@@ -329,14 +329,23 @@
     // equipment affixes (loot system)
     const eq = computeEquipBonus();
 
+    // warband specialists (crew units)
+    const u = s.units || {};
+    const unitCrewPct = (u.berserker || 0) * C.CREW_BERSERKER_CREW_PCT;
+    const unitTapPct = (u.archer || 0) * C.CREW_ARCHER_TAP_PCT;
+    const unitCrit = (u.archer || 0) * C.CREW_ARCHER_CRIT;
+    const shipDmgReduce = Math.min(C.CREW_SHIELD_REDUCE_CAP, (u.shieldmaiden || 0) * C.CREW_SHIELD_REDUCE);
+    const unitRegen = (u.shieldmaiden || 0) * C.CREW_SHIELD_REGEN;
+
     const d = {
       statMul: statMul,
-      tapDmg: tapDmg * (1 + eq.tapPct) + eq.tapFlat,
-      crewDps: crewDmg * (1 + eq.crewPct),
+      tapDmg: tapDmg * (1 + eq.tapPct + unitTapPct) + eq.tapFlat,
+      crewDps: crewDmg * (1 + eq.crewPct + unitCrewPct),
       shipMaxHp: Math.max(1, shipMaxHp * (1 + eq.hpPct)),
+      shipDmgReduce: shipDmgReduce,
       regenFrac:
-        C.REGEN_BASE_FRAC + (s.upgrades.rations || 0) * C.RATIONS_REGEN_PER_LEVEL + eq.regen,
-      critChance: Math.min(C.CRIT_CAP, C.CRIT_BASE_CHANCE + fotEff * C.FOT_CRIT_CHANCE + eq.crit),
+        C.REGEN_BASE_FRAC + (s.upgrades.rations || 0) * C.RATIONS_REGEN_PER_LEVEL + eq.regen + unitRegen,
+      critChance: Math.min(C.CRIT_CAP, C.CRIT_BASE_CHANCE + fotEff * C.FOT_CRIT_CHANCE + eq.crit + unitCrit),
       critMult: C.CRIT_BASE_MULT + (s.upgrades.mead || 0) * C.MEAD_CRIT_MULT_PER_LEVEL + eq.critDmg,
       goldMult: (1 + fotEff * C.FOT_GOLD_PER_LEVEL) * (1 + sagaBonus("gold")) * (1 + eq.gold),
       crewInterval:
@@ -567,11 +576,13 @@
       }
     }
 
-    // enemy defense drains the longship (fury hits much harder)
+    // enemy defense drains the longship (fury hits much harder;
+    // shieldmaidens blunt the incoming damage)
     const shielded = s.abilities.shield.activeLeft > 0;
     if (!shielded) {
       const furyMult = v.fury ? CONFIG.BOSS_FURY_DPS_MULT : 1;
-      s.shipHp -= v.dps * furyMult * dt;
+      const reduce = 1 - (d.shipDmgReduce || 0);
+      s.shipHp -= v.dps * furyMult * reduce * dt;
     }
 
     // durability regen
@@ -736,6 +747,54 @@
     return true;
   };
 
+  // --- Warband specialists (crew units) ----------------------------
+  Sys.unitCost = function (id, count) {
+    const def = DATA.UNIT_BY_ID[id];
+    return F.upgradeCost(def.baseCost, def.growth, count);
+  };
+
+  Sys.unitUnlocked = function (id) {
+    return G.state.level >= DATA.UNIT_BY_ID[id].unlockLevel;
+  };
+
+  // how many of a unit we can hire with current gold (max `cap`)
+  Sys.unitMaxAffordable = function (id, cap) {
+    const s = G.state;
+    const def = DATA.UNIT_BY_ID[id];
+    let n = (s.units && s.units[id]) || 0;
+    let gold = s.gold;
+    let count = 0;
+    cap = cap || 100000;
+    while (count < cap) {
+      const cost = F.upgradeCost(def.baseCost, def.growth, n);
+      if (gold < cost) break;
+      gold -= cost;
+      n++;
+      count++;
+    }
+    return { count: count, spent: s.gold - gold, nextCost: F.upgradeCost(def.baseCost, def.growth, n) };
+  };
+
+  Sys.hireUnit = function (id, qty) {
+    const s = G.state;
+    const def = DATA.UNIT_BY_ID[id];
+    if (!def || !Sys.unitUnlocked(id)) return false;
+    const aff = Sys.unitMaxAffordable(id, qty === "max" ? 100000 : qty || 1);
+    if (aff.count <= 0) return false;
+    s.gold -= aff.spent;
+    if (!s.units) s.units = {};
+    s.units[id] = (s.units[id] || 0) + aff.count;
+    Sys.daily("hires", aff.count);
+    G.dirty = true;
+    G.emit("hire", { id: id, count: aff.count });
+    return true;
+  };
+
+  Sys.totalUnits = function () {
+    const u = G.state.units || {};
+    return (u.berserker || 0) + (u.archer || 0) + (u.shieldmaiden || 0);
+  };
+
   // --- Abilities ---------------------------------------------------
   Sys.abilityReady = function (id) {
     const s = G.state;
@@ -792,6 +851,7 @@
     s.stats = { str: 0, led: 0, vit: 0, fot: 0 };
     s.upgrades = {};
     DATA.UPGRADES.forEach((u) => (s.upgrades[u.id] = 0));
+    s.units = { berserker: 0, archer: 0, shieldmaiden: 0 };
     s.region = 0;
     s.villageIndex = 0;
     s.highestRegion = 0;

@@ -50,6 +50,7 @@ Every equipment bonus feeds directly back into the derived-stat formulas, so the
 - **Village modifiers** — every fight can roll an affix that changes the encounter: **Wealthy/Golden** (bonus gold), **Stalwart** (fortified HP), **Frenzy/Bloodthirsty/Raging** (deadlier defenses), **Swift**, **Plagued**, or **Hexed** (no crits — but double gold). Chance scales with region depth; bosses always carry one. Shown as a badge on the target and in the HUD.
 - **Ragnarök ultimate** — a **Rage meter** charges from tapping and clearing villages. When full, unleash a screen-shaking burst of damage **plus an 8-second 2× power buff**. A dedicated glowing button with a live charge readout.
 - **Boss Fury / Stagger** — below 35% HP a boss **staggers** (a burst window where it takes double damage), then **enrages** — its defenses hit far harder, so time your **Shield Wall**. Reactive boss fights, not just bigger HP pools.
+- **Warband Specialists** — hire elite crew units with gold (Forge tab): **Berserkers** (+2% Crew DPS each, Lv 6), **Archers** (+2% Tap damage & +0.05% Crit each, Lv 10), and **Shieldmaidens** (−0.8% ship damage taken & +0.04% regen each, capped at −60%, Lv 14). Painted portrait cards with x1/x10/MAX hiring; counts reset on prestige for a fresh build each Saga.
 
 ---
 
@@ -95,8 +96,8 @@ python3 -m http.server 8080
 ```bash
 npm install            # pulls jsdom for the DOM test
 npm test               # runs both suites
-#   • test_logic.js  — 71 core-simulation assertions (combat, leveling, upgrades, loot, runes, daily quests, combo, achievements, modifiers, Ragnarök, boss mechanics, prestige, offline, save)
-#   • dom_smoke.js   — 29 full-runtime checks in a real DOM (jsdom) with mocked canvas/audio
+#   • test_logic.js  — 85 core-simulation assertions (combat, leveling, upgrades, loot, runes, daily quests, combo, achievements, modifiers, Ragnarök, boss mechanics, warband units, prestige, offline, save)
+#   • dom_smoke.js   — 33 full-runtime checks in a real DOM (jsdom) with mocked canvas/audio
 ```
 
 ---

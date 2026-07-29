@@ -201,7 +201,7 @@ async function main() {
   await loadIm("scene_bosslair", "scene_bosslair.png");
   await loadIm("hero", "hero_chieftain.png");
   await loadIm("logo", "logo.png");
-  for (const n of ["ab_berserk","ab_shield","ab_horn","ab_valkyrie","ab_ragnarok","tab_raid","tab_forge","tab_hero","tab_loot","tab_saga"]) {
+  for (const n of ["ab_berserk","ab_shield","ab_horn","ab_valkyrie","ab_ragnarok","tab_raid","tab_forge","tab_hero","tab_loot","tab_saga","unit_berserker","unit_archer","unit_shieldmaiden"]) {
     IMG[n] = await loadImage(path.resolve(__dirname, "..", "assets", "icons", n + ".png"));
   }
   const time = 1.2;
@@ -264,6 +264,42 @@ async function main() {
     buildWeather(st.region); drawBackground(c, st.region); drawWeather(c, st.region);
     drawTarget(c, v, time); drawCombo(c, G.runtime.combo, G.runtime.comboTimer); drawShip(c, st.shipHp, G.derived.shipMaxHp);
     drawFloaters(c, [ {x:W*0.46,y:H*0.33,t:"9,240!",c:"#ffd54a",a:1,big:true} ]);
+    drawChrome(c, st, v);
+  });
+
+  await shot("07_warband", function (c) {
+    const st = makeState({ region: 3, villageIndex: 2, gold: 21500000, level: 36, rage: 0.55 });
+    st.units = { berserker: 42, archer: 28, shieldmaiden: 17 };
+    Sys.init(st); const v = G.village; v.hp = v.maxHp * 0.7;
+    buildWeather(st.region); drawBackground(c, st.region); drawWeather(c, st.region);
+    // dark panel like the forge sheet
+    const py = H*0.30, ph = H*0.395;
+    c.fillStyle = "rgba(8,11,18,0.94)"; roundRect(c, 40, py, W-80, ph, 36); c.fill();
+    c.strokeStyle = "#caa24a"; c.lineWidth = 3; roundRect(c, 40, py, W-80, ph, 36); c.stroke();
+    c.textAlign="left"; c.fillStyle="#ffd870"; c.font="bold 52px serif"; c.fillText("⚜️ Warband Specialists", 90, py+90);
+    c.fillStyle="#9a9484"; c.font="30px sans-serif"; c.fillText("Hire elite units — every recruit makes the raid stronger", 90, py+140);
+    const rows = [
+      ["unit_berserker","Berserkers","×42","+2% Crew DPS each","48.2K"],
+      ["unit_archer","Archers","×28","+2% Tap dmg & Crit each","112K"],
+      ["unit_shieldmaiden","Shieldmaidens","×17","-0.8% ship damage taken each","96.4K"],
+    ];
+    let ry = py + 200;
+    rows.forEach((r)=>{
+      c.fillStyle="rgba(255,255,255,0.05)"; roundRect(c, 80, ry, W-160, 190, 24); c.fill();
+      const im = IMG[r[0]]; const isz = 140;
+      if (im) { c.save(); c.beginPath(); c.arc(80+40+isz/2, ry+95, isz/2, 0, Math.PI*2); c.clip(); c.drawImage(im, 120, ry+95-isz/2, isz, isz); c.restore(); }
+      c.textAlign="left"; c.fillStyle="#ece7d8"; c.font="bold 40px serif"; c.fillText(r[1]+"  ", 300, ry+75);
+      c.fillStyle="#ffd870"; c.font="bold 34px sans-serif"; c.fillText(r[2], 300 + c.measureText(r[1]).width + 60, ry+75);
+      c.fillStyle="#9a9484"; c.font="28px sans-serif"; c.fillText(r[3], 300, ry+125);
+      const bw=210, bx=W-120-bw;
+      c.fillStyle="#2c3446"; roundRect(c, bx, ry+55, bw, 80, 16); c.fill();
+      c.strokeStyle="#caa24a"; c.lineWidth=2; roundRect(c, bx, ry+55, bw, 80, 16); c.stroke();
+      // drawn coin + price
+      c.fillStyle="#ffd870"; c.beginPath(); c.arc(bx+44, ry+95, 17, 0, Math.PI*2); c.fill();
+      c.strokeStyle="#8a6620"; c.lineWidth=3; c.beginPath(); c.arc(bx+44, ry+95, 17, 0, Math.PI*2); c.stroke();
+      c.textAlign="left"; c.fillStyle="#ffd870"; c.font="bold 30px sans-serif"; c.textBaseline="middle"; c.fillText(r[4], bx+74, ry+95); c.textBaseline="alphabetic";
+      ry += 220;
+    });
     drawChrome(c, st, v);
   });
 
